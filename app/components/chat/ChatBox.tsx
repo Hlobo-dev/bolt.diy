@@ -126,6 +126,67 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
         'relative w-full max-w-chat mx-auto z-prompt',
       )}
     >
+      {/* GitHub Copilot multi-layered gradient glow behind the input — only on landing page */}
+      {!props.chatStarted && <div className="absolute -inset-[120px] -z-10 pointer-events-none" aria-hidden="true">
+        {/* Layer 1: Deep purple base wash */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'radial-gradient(ellipse 70% 50% at 50% 60%, #130138 0%, transparent 70%)',
+            opacity: 0.9,
+          }}
+        />
+        {/* Layer 2: Rich purple mid layer */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'radial-gradient(ellipse 55% 45% at 45% 55%, #240263 0%, transparent 65%)',
+            opacity: 0.8,
+          }}
+        />
+        {/* Layer 3: Electric violet core left */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'radial-gradient(ellipse 40% 35% at 30% 50%, #3602c7 0%, transparent 60%)',
+            opacity: 0.7,
+          }}
+        />
+        {/* Layer 4: Blue-indigo bloom right */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'radial-gradient(ellipse 40% 35% at 70% 50%, #271ee3 0%, transparent 60%)',
+            opacity: 0.65,
+          }}
+        />
+        {/* Layer 5: Cyan-blue highlight top */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'radial-gradient(ellipse 50% 30% at 60% 35%, #2784d6 0%, transparent 55%)',
+            opacity: 0.5,
+          }}
+        />
+        {/* Layer 6: Soft purple-blue sweep across */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'conic-gradient(from 180deg at 50% 55%, #130138 0deg, #240263 60deg, #3602c7 120deg, #271ee3 200deg, #2784d6 270deg, #130138 360deg)',
+            opacity: 0.3,
+            filter: 'blur(60px)',
+          }}
+        />
+        {/* Layer 7: Ambient outer glow */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'radial-gradient(ellipse 80% 60% at 50% 55%, rgba(54, 2, 199, 0.25) 0%, rgba(39, 132, 214, 0.1) 40%, transparent 70%)',
+            filter: 'blur(40px)',
+          }}
+        />
+      </div>}
+
       {/* Main Copilot-style input container */}
       <div className="rounded-lg border border-[#3d3d3d]/60 bg-[#303030] overflow-hidden">
         {/* Top bar: Add Context button */}
@@ -483,7 +544,6 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
           </div>
         </div>
       </div>
-      <SupabaseConnection />
       <ExpoQrModal open={props.qrModalOpen} onClose={() => props.setQrModalOpen(false)} />
     </div>
   );

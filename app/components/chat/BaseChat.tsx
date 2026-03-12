@@ -351,7 +351,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
         <div className="flex flex-col lg:flex-row overflow-y-auto w-full h-full">
           <div className={classNames(styles.Chat, 'flex flex-col flex-grow lg:min-w-[var(--chat-min-width)] h-full')}>
             {!chatStarted && (
-              <div id="intro" className="mt-[16vh] max-w-2xl mx-auto text-center px-4 lg:px-0">
+              <div id="intro" className="mt-[16vh] max-w-2xl mx-auto text-center px-4 lg:px-0 relative z-10">
                 <p className="text-xs lg:text-sm font-semibold tracking-[0.2em] uppercase text-[#8b949e] mb-4 animate-fade-in">
                   GitHub Copilot <span className="inline-block w-2 h-2 bg-[#3fb950] rounded-sm ml-1 align-middle" />
                 </p>
@@ -474,7 +474,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                 />
               </div>
             </StickToBottom>
-            <div className="flex flex-col justify-center">
+            <div className="flex flex-col justify-center relative z-10">
               {!chatStarted && (
                 <div className="flex justify-center gap-2">
                   {ImportButtons(importChat)}

@@ -20,7 +20,7 @@
   /* Cursor */
 
   --cm-cursor-width: 2px;
-  --cm-cursor-backgroundColor: var(--bolt-elements-editor-cursorColor, var(--bolt-elements-textSecondary));
+  --cm-cursor-backgroundColor: var(--bolt-elements-editor-cursorColor, #aeafad);
 
   /* Matching Brackets */
 
@@ -123,13 +123,18 @@ html[data-theme='light'] {
 }
 
 html[data-theme='dark'] {
-  --cm-backgroundColor: var(--bolt-elements-bg-depth-2);
-  --bolt-elements-editor-gutter-textColor: var(--bolt-elements-textTertiary);
-  --bolt-elements-editor-gutter-activeLineTextColor: var(--bolt-elements-textSecondary);
-  --bolt-elements-editor-selection-inactiveBackgroundOpacity: 0.3;
-  --bolt-elements-editor-activeLineBackgroundColor: rgb(50 53 63 / 50%);
-  --bolt-elements-editor-foldGutter-textColorHover: var(--bolt-elements-textPrimary);
-  --bolt-elements-editor-matchingBracketBackgroundColor: rgba(66, 180, 255, 0.3);
-  --bolt-elements-editor-search-button-backgroundColor: theme('colors.gray.800');
-  --bolt-elements-editor-search-button-backgroundColorHover: theme('colors.alpha.white.10');
+  --cm-backgroundColor: #1f1f1f;
+  --bolt-elements-editor-gutter-textColor: #858585;
+  --bolt-elements-editor-gutter-activeLineTextColor: #c6c6c6;
+  --bolt-elements-editor-selection-inactiveBackgroundOpacity: 0.4;
+  --bolt-elements-editor-activeLineBackgroundColor: #2a2d2e;
+  --bolt-elements-editor-foldGutter-textColorHover: #cccccc;
+  --bolt-elements-editor-matchingBracketBackgroundColor: rgba(0, 122, 204, 0.3);
+  --bolt-elements-editor-search-button-backgroundColor: #313131;
+  --bolt-elements-editor-search-button-backgroundColorHover: #3c3c3c;
+  --bolt-elements-editor-cursorColor: #aeafad;
+  --cm-selection-backgroundColorFocused: #264f78;
+  --cm-selection-backgroundOpacityFocused: 0.65;
+  --cm-selection-backgroundColorBlured: #264f78;
+  --cm-selection-backgroundOpacityBlured: 0.4;
 }

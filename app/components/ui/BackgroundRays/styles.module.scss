@@ -1,8 +1,8 @@
 .rayContainer {
   // GitHub-style blue-indigo glow colors
-  --ray-color-primary: color-mix(in srgb, var(--primary-color), transparent 50%);
-  --ray-color-secondary: color-mix(in srgb, var(--secondary-color), transparent 50%);
-  --ray-color-accent: color-mix(in srgb, var(--accent-color), transparent 50%);
+  --ray-color-primary: color-mix(in srgb, var(--primary-color), transparent 95%);
+  --ray-color-secondary: color-mix(in srgb, var(--secondary-color), transparent 95%);
+  --ray-color-accent: color-mix(in srgb, var(--accent-color), transparent 95%);
 
   // Theme-specific gradients
   --ray-gradient-primary: radial-gradient(var(--ray-color-primary) 0%, transparent 70%);
