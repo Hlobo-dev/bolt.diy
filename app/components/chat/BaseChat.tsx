@@ -15,10 +15,8 @@ import Cookies from 'js-cookie';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import styles from './BaseChat.module.scss';
 import { ImportButtons } from '~/components/chat/chatExportAndImport/ImportButtons';
-import { ExamplePrompts } from '~/components/chat/ExamplePrompts';
 import GitCloneButton from './GitCloneButton';
 import type { ProviderInfo } from '~/types/model';
-import StarterTemplates from './StarterTemplates';
 import type { ActionAlert, SupabaseAlert, DeployAlert, LlmErrorAlertType } from '~/types/actions';
 import DeployChatAlert from '~/components/deploy/DeployAlert';
 import ChatAlert from './ChatAlert';
@@ -349,17 +347,17 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       >
         <ClientOnly>{() => <Menu />}</ClientOnly>
         <div className="flex flex-col lg:flex-row overflow-y-auto w-full h-full">
-          <div className={classNames(styles.Chat, 'flex flex-col flex-grow lg:min-w-[var(--chat-min-width)] h-full', {
+          <div
+            className={classNames(styles.Chat, 'flex flex-col flex-grow lg:min-w-[var(--chat-min-width)] h-full', {
               'bg-black': !chatStarted,
-            })}>
+            })}
+          >
             {!chatStarted && (
               <div id="intro" className="mt-[16vh] max-w-2xl mx-auto text-center px-4 lg:px-0 relative z-10">
                 <p className="text-xs lg:text-sm font-semibold tracking-[0.2em] uppercase text-[#8b949e] mb-4 animate-fade-in">
                   GitHub Copilot <span className="inline-block w-2 h-2 bg-[#3fb950] rounded-sm ml-1 align-middle" />
                 </p>
-                <h1 className="text-3xl lg:text-6xl font-bold text-white mb-4 animate-fade-in">
-                  Command your craft
-                </h1>
+                <h1 className="text-3xl lg:text-6xl font-bold text-white mb-4 animate-fade-in">Command your craft</h1>
                 <p className="text-md lg:text-xl mb-8 text-[#8b949e] animate-fade-in animation-delay-200">
                   Your AI accelerator for every workflow, from the editor to the enterprise.
                 </p>
@@ -483,8 +481,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                   <GitCloneButton importChat={importChat} />
                 </div>
               )}
-              <div className="flex flex-col gap-5">
-              </div>
+              <div className="flex flex-col gap-5"></div>
             </div>
           </div>
           <ClientOnly>

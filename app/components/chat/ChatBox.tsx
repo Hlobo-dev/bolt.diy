@@ -6,7 +6,6 @@ import { ScreenshotStateManager } from './ScreenshotStateManager';
 import { IconButton } from '~/components/ui/IconButton';
 import { toast } from 'react-toastify';
 import { SpeechRecognitionButton } from '~/components/chat/SpeechRecognition';
-import { SupabaseConnection } from './SupabaseConnection';
 import { ExpoQrModal } from '~/components/workbench/ExpoQrModal';
 import type { ProviderInfo } from '~/types/model';
 import { ColorSchemeDialog } from '~/components/ui/ColorSchemeDialog';
@@ -42,12 +41,18 @@ function formatModelName(model: string | undefined): string {
 
   // Handle gemini models
   if (model.startsWith('gemini-')) {
-    const name = model.replace(/^gemini-/, '').replace(/-\d{4,}$/, '').replace(/-/g, ' ');
+    const name = model
+      .replace(/^gemini-/, '')
+      .replace(/-\d{4,}$/, '')
+      .replace(/-/g, ' ');
     return `Gemini ${name.charAt(0).toUpperCase() + name.slice(1)}`;
   }
 
   // Fallback: remove trailing date-like numbers and clean up
-  return model.replace(/-\d{8,}$/, '').replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  return model
+    .replace(/-\d{8,}$/, '')
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 interface ChatBoxProps {
@@ -121,71 +126,71 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
   }, []);
 
   return (
-    <div
-      className={classNames(
-        'relative w-full max-w-chat mx-auto z-prompt',
-      )}
-    >
+    <div className={classNames('relative w-full max-w-chat mx-auto z-prompt')}>
       {/* GitHub Copilot multi-layered gradient glow behind the input — only on landing page */}
-      {!props.chatStarted && <div className="absolute -inset-[120px] -z-10 pointer-events-none" aria-hidden="true">
-        {/* Layer 1: Deep purple base wash */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'radial-gradient(ellipse 70% 50% at 50% 60%, #130138 0%, transparent 70%)',
-            opacity: 0.9,
-          }}
-        />
-        {/* Layer 2: Rich purple mid layer */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'radial-gradient(ellipse 55% 45% at 45% 55%, #240263 0%, transparent 65%)',
-            opacity: 0.8,
-          }}
-        />
-        {/* Layer 3: Electric violet core left */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'radial-gradient(ellipse 40% 35% at 30% 50%, #3602c7 0%, transparent 60%)',
-            opacity: 0.7,
-          }}
-        />
-        {/* Layer 4: Blue-indigo bloom right */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'radial-gradient(ellipse 40% 35% at 70% 50%, #271ee3 0%, transparent 60%)',
-            opacity: 0.65,
-          }}
-        />
-        {/* Layer 5: Cyan-blue highlight top */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'radial-gradient(ellipse 50% 30% at 60% 35%, #2784d6 0%, transparent 55%)',
-            opacity: 0.5,
-          }}
-        />
-        {/* Layer 6: Soft purple-blue sweep across */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'conic-gradient(from 180deg at 50% 55%, #130138 0deg, #240263 60deg, #3602c7 120deg, #271ee3 200deg, #2784d6 270deg, #130138 360deg)',
-            opacity: 0.3,
-            filter: 'blur(60px)',
-          }}
-        />
-        {/* Layer 7: Ambient outer glow */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'radial-gradient(ellipse 80% 60% at 50% 55%, rgba(54, 2, 199, 0.25) 0%, rgba(39, 132, 214, 0.1) 40%, transparent 70%)',
-            filter: 'blur(40px)',
-          }}
-        />
-      </div>}
+      {!props.chatStarted && (
+        <div className="absolute -inset-[120px] -z-10 pointer-events-none" aria-hidden="true">
+          {/* Layer 1: Deep purple base wash */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: 'radial-gradient(ellipse 70% 50% at 50% 60%, #130138 0%, transparent 70%)',
+              opacity: 0.9,
+            }}
+          />
+          {/* Layer 2: Rich purple mid layer */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: 'radial-gradient(ellipse 55% 45% at 45% 55%, #240263 0%, transparent 65%)',
+              opacity: 0.8,
+            }}
+          />
+          {/* Layer 3: Electric violet core left */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: 'radial-gradient(ellipse 40% 35% at 30% 50%, #3602c7 0%, transparent 60%)',
+              opacity: 0.7,
+            }}
+          />
+          {/* Layer 4: Blue-indigo bloom right */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: 'radial-gradient(ellipse 40% 35% at 70% 50%, #271ee3 0%, transparent 60%)',
+              opacity: 0.65,
+            }}
+          />
+          {/* Layer 5: Cyan-blue highlight top */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: 'radial-gradient(ellipse 50% 30% at 60% 35%, #2784d6 0%, transparent 55%)',
+              opacity: 0.5,
+            }}
+          />
+          {/* Layer 6: Soft purple-blue sweep across */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'conic-gradient(from 180deg at 50% 55%, #130138 0deg, #240263 60deg, #3602c7 120deg, #271ee3 200deg, #2784d6 270deg, #130138 360deg)',
+              opacity: 0.3,
+              filter: 'blur(60px)',
+            }}
+          />
+          {/* Layer 7: Ambient outer glow */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(ellipse 80% 60% at 50% 55%, rgba(54, 2, 199, 0.25) 0%, rgba(39, 132, 214, 0.1) 40%, transparent 70%)',
+              filter: 'blur(40px)',
+            }}
+          />
+        </div>
+      )}
 
       {/* Main Copilot-style input container */}
       <div className="rounded-lg border border-[#3d3d3d]/60 bg-[#303030] overflow-hidden">
@@ -302,7 +307,13 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               minHeight: props.TEXTAREA_MIN_HEIGHT,
               maxHeight: props.TEXTAREA_MAX_HEIGHT,
             }}
-            placeholder={isVoiceAgentMode ? 'Press the voice button to start talking...' : props.chatMode === 'build' ? 'Edit files in your workspace in agent mode' : 'What would you like to discuss?'}
+            placeholder={
+              isVoiceAgentMode
+                ? 'Press the voice button to start talking...'
+                : props.chatMode === 'build'
+                  ? 'Edit files in your workspace in agent mode'
+                  : 'What would you like to discuss?'
+            }
             translate="no"
           />
         </div>
@@ -320,16 +331,21 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
                 }}
                 className="flex items-center gap-1 text-[13px] text-[#c9d1d9] hover:text-white bg-transparent border-none cursor-pointer transition-colors"
               >
-                <span className="font-medium">{isVoiceAgentMode ? 'Voice Agent' : props.chatMode === 'discuss' ? 'Ask' : 'Agent'}</span>
+                <span className="font-medium">
+                  {isVoiceAgentMode ? 'Voice Agent' : props.chatMode === 'discuss' ? 'Ask' : 'Agent'}
+                </span>
                 <div className="i-ph:caret-down text-[10px] text-[#8b949e]" />
               </button>
 
               {/* Mode dropdown popup */}
               {modeDropdownOpen && (
-                <div className="fixed w-[220px] bg-[#303030] border border-[#3d3d3d] rounded-md shadow-xl z-[9999] py-1 text-[13px]" style={{
-                  bottom: `${window.innerHeight - (modeDropdownRef.current?.getBoundingClientRect().top ?? 0) + 4}px`,
-                  left: `${modeDropdownRef.current?.getBoundingClientRect().left ?? 0}px`,
-                }}>
+                <div
+                  className="fixed w-[220px] bg-[#303030] border border-[#3d3d3d] rounded-md shadow-xl z-[9999] py-1 text-[13px]"
+                  style={{
+                    bottom: `${window.innerHeight - (modeDropdownRef.current?.getBoundingClientRect().top ?? 0) + 4}px`,
+                    left: `${modeDropdownRef.current?.getBoundingClientRect().left ?? 0}px`,
+                  }}
+                >
                   <div className="px-3 py-1.5 text-[#8b949e] text-[11px] font-semibold uppercase tracking-wide">
                     Built-In
                   </div>
@@ -343,7 +359,9 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
                     className="w-full flex items-center justify-between px-3 py-1.5 text-left text-[#c9d1d9] hover:bg-[#1f6feb]/30 bg-transparent border-none cursor-pointer transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="w-4 text-center">{props.chatMode === 'build' && !isVoiceAgentMode ? '✓' : ''}</span>
+                      <span className="w-4 text-center">
+                        {props.chatMode === 'build' && !isVoiceAgentMode ? '✓' : ''}
+                      </span>
                       <span>Agent</span>
                     </div>
                     <span className="text-[11px] text-[#484f58]">⇧⌘I</span>
@@ -374,7 +392,9 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
                     className="w-full flex items-center px-3 py-1.5 text-left text-[#c9d1d9] hover:bg-[#1f6feb]/30 bg-transparent border-none cursor-pointer transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="w-4 text-center">{props.chatMode === 'discuss' && !isVoiceAgentMode ? '✓' : ''}</span>
+                      <span className="w-4 text-center">
+                        {props.chatMode === 'discuss' && !isVoiceAgentMode ? '✓' : ''}
+                      </span>
                       <span>Ask</span>
                     </div>
                   </button>
@@ -455,13 +475,17 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             {/* Voice Agent button - prominent when voice mode is active */}
             {isVoiceAgentMode && (
               <>
-                <style dangerouslySetInnerHTML={{ __html: `
+                <style
+                  dangerouslySetInnerHTML={{
+                    __html: `
                   @keyframes voiceBar1 { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(1); } }
                   @keyframes voiceBar2 { 0%, 100% { transform: scaleY(0.6); } 50% { transform: scaleY(0.3); } }
                   @keyframes voiceBar3 { 0%, 100% { transform: scaleY(0.8); } 50% { transform: scaleY(0.5); } }
                   @keyframes voiceBar4 { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(0.9); } }
                   @keyframes voiceBar5 { 0%, 100% { transform: scaleY(0.5); } 50% { transform: scaleY(0.7); } }
-                ` }} />
+                `,
+                  }}
+                />
                 <button
                   onClick={() => setIsVoiceActive(!isVoiceActive)}
                   className={classNames(
@@ -474,16 +498,71 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
                   title={isVoiceActive ? 'Stop voice agent' : 'Start voice agent'}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="2" y="6" width="2.5" height="12" rx="1.25" fill="currentColor"
-                      style={isVoiceActive ? { transformOrigin: 'center', animation: 'voiceBar1 0.8s ease-in-out infinite' } : { transform: 'scaleY(0.5)', transformOrigin: 'center' }} />
-                    <rect x="6.5" y="3" width="2.5" height="18" rx="1.25" fill="currentColor"
-                      style={isVoiceActive ? { transformOrigin: 'center', animation: 'voiceBar2 0.6s ease-in-out infinite' } : { transform: 'scaleY(0.7)', transformOrigin: 'center' }} />
-                    <rect x="11" y="5" width="2.5" height="14" rx="1.25" fill="currentColor"
-                      style={isVoiceActive ? { transformOrigin: 'center', animation: 'voiceBar3 0.7s ease-in-out infinite' } : { transform: 'scaleY(0.6)', transformOrigin: 'center' }} />
-                    <rect x="15.5" y="2" width="2.5" height="20" rx="1.25" fill="currentColor"
-                      style={isVoiceActive ? { transformOrigin: 'center', animation: 'voiceBar4 0.5s ease-in-out infinite' } : { transform: 'scaleY(0.8)', transformOrigin: 'center' }} />
-                    <rect x="20" y="7" width="2.5" height="10" rx="1.25" fill="currentColor"
-                      style={isVoiceActive ? { transformOrigin: 'center', animation: 'voiceBar5 0.9s ease-in-out infinite' } : { transform: 'scaleY(0.5)', transformOrigin: 'center' }} />
+                    <rect
+                      x="2"
+                      y="6"
+                      width="2.5"
+                      height="12"
+                      rx="1.25"
+                      fill="currentColor"
+                      style={
+                        isVoiceActive
+                          ? { transformOrigin: 'center', animation: 'voiceBar1 0.8s ease-in-out infinite' }
+                          : { transform: 'scaleY(0.5)', transformOrigin: 'center' }
+                      }
+                    />
+                    <rect
+                      x="6.5"
+                      y="3"
+                      width="2.5"
+                      height="18"
+                      rx="1.25"
+                      fill="currentColor"
+                      style={
+                        isVoiceActive
+                          ? { transformOrigin: 'center', animation: 'voiceBar2 0.6s ease-in-out infinite' }
+                          : { transform: 'scaleY(0.7)', transformOrigin: 'center' }
+                      }
+                    />
+                    <rect
+                      x="11"
+                      y="5"
+                      width="2.5"
+                      height="14"
+                      rx="1.25"
+                      fill="currentColor"
+                      style={
+                        isVoiceActive
+                          ? { transformOrigin: 'center', animation: 'voiceBar3 0.7s ease-in-out infinite' }
+                          : { transform: 'scaleY(0.6)', transformOrigin: 'center' }
+                      }
+                    />
+                    <rect
+                      x="15.5"
+                      y="2"
+                      width="2.5"
+                      height="20"
+                      rx="1.25"
+                      fill="currentColor"
+                      style={
+                        isVoiceActive
+                          ? { transformOrigin: 'center', animation: 'voiceBar4 0.5s ease-in-out infinite' }
+                          : { transform: 'scaleY(0.8)', transformOrigin: 'center' }
+                      }
+                    />
+                    <rect
+                      x="20"
+                      y="7"
+                      width="2.5"
+                      height="10"
+                      rx="1.25"
+                      fill="currentColor"
+                      style={
+                        isVoiceActive
+                          ? { transformOrigin: 'center', animation: 'voiceBar5 0.9s ease-in-out infinite' }
+                          : { transform: 'scaleY(0.5)', transformOrigin: 'center' }
+                      }
+                    />
                   </svg>
                 </button>
               </>
@@ -614,7 +693,13 @@ function findMatchingModelId(displayName: string, modelList: any[]): string | un
   return undefined;
 }
 
-function ModelDropdownPopup({ modelList, currentModel, onSelectModel, onManageModels, anchorRef }: ModelDropdownPopupProps) {
+function ModelDropdownPopup({
+  modelList,
+  currentModel,
+  onSelectModel,
+  onManageModels,
+  anchorRef,
+}: ModelDropdownPopupProps) {
   // Try to map Copilot display names to actual model IDs
   const standardModels = COPILOT_STANDARD_MODELS.map((m) => ({
     ...m,
@@ -723,7 +808,7 @@ function ModelDropdownPopup({ modelList, currentModel, onSelectModel, onManageMo
 
 // ElevenLabs Voices for Voice Agent mode
 const ELEVENLABS_VOICES = {
-  'Conversational': [
+  Conversational: [
     { name: 'Rachel', description: 'Calm, warm female', accent: 'American' },
     { name: 'Drew', description: 'Confident, well-rounded male', accent: 'American' },
     { name: 'Clyde', description: 'Gruff, deep male', accent: 'American' },
@@ -737,7 +822,7 @@ const ELEVENLABS_VOICES = {
     { name: 'Charlie', description: 'Casual, Australian male', accent: 'Australian' },
     { name: 'Emily', description: 'Calm, sweet female', accent: 'American' },
   ],
-  'Narration': [
+  Narration: [
     { name: 'Aria', description: 'Expressive, broadcast female', accent: 'American' },
     { name: 'Roger', description: 'Deep, confident male', accent: 'American' },
     { name: 'Jessica', description: 'Expressive, engaging female', accent: 'American' },
@@ -783,9 +868,7 @@ function VoiceDropdownPopup({ currentVoice, anchorRef, onSelectVoice }: VoiceDro
 
       {Object.entries(ELEVENLABS_VOICES).map(([category, voices]) => (
         <div key={category}>
-          <div className="px-3 py-1.5 text-[#8b949e] text-[11px] font-semibold uppercase tracking-wide">
-            {category}
-          </div>
+          <div className="px-3 py-1.5 text-[#8b949e] text-[11px] font-semibold uppercase tracking-wide">{category}</div>
           {voices.map((voice) => {
             const isSelected = voice.name === currentVoice;
 
@@ -795,9 +878,7 @@ function VoiceDropdownPopup({ currentVoice, anchorRef, onSelectVoice }: VoiceDro
                 onClick={() => onSelectVoice(voice.name)}
                 className={classNames(
                   'w-full flex items-center justify-between px-3 py-1.5 text-left bg-transparent border-none cursor-pointer transition-colors',
-                  isSelected
-                    ? 'text-[#c9d1d9] bg-[#1f6feb]/20'
-                    : 'text-[#c9d1d9] hover:bg-[#1f6feb]/30',
+                  isSelected ? 'text-[#c9d1d9] bg-[#1f6feb]/20' : 'text-[#c9d1d9] hover:bg-[#1f6feb]/30',
                 )}
               >
                 <div className="flex items-center gap-2">
@@ -815,9 +896,7 @@ function VoiceDropdownPopup({ currentVoice, anchorRef, onSelectVoice }: VoiceDro
       ))}
 
       <div className="border-t border-[#3d3d3d] my-1" />
-      <button
-        className="w-full flex items-center px-3 py-1.5 text-left text-[#58a6ff] hover:bg-[#1f6feb]/30 bg-transparent border-none cursor-pointer transition-colors"
-      >
+      <button className="w-full flex items-center px-3 py-1.5 text-left text-[#58a6ff] hover:bg-[#1f6feb]/30 bg-transparent border-none cursor-pointer transition-colors">
         <div className="flex items-center gap-2">
           <span className="w-4" />
           <span>Manage Voices...</span>
