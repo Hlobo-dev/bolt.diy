@@ -1,8 +1,8 @@
 .rayContainer {
-  // Theme-specific colors
-  --ray-color-primary: color-mix(in srgb, var(--primary-color), transparent 30%);
-  --ray-color-secondary: color-mix(in srgb, var(--secondary-color), transparent 30%);
-  --ray-color-accent: color-mix(in srgb, var(--accent-color), transparent 30%);
+  // GitHub-style blue-indigo glow colors
+  --ray-color-primary: color-mix(in srgb, var(--primary-color), transparent 50%);
+  --ray-color-secondary: color-mix(in srgb, var(--secondary-color), transparent 50%);
+  --ray-color-accent: color-mix(in srgb, var(--accent-color), transparent 50%);
 
   // Theme-specific gradients
   --ray-gradient-primary: radial-gradient(var(--ray-color-primary) 0%, transparent 70%);
@@ -47,8 +47,8 @@
   transform: rotate(65deg);
   top: -500px;
   left: -100px;
-  filter: blur(80px);
-  opacity: 0.6;
+  filter: blur(100px);
+  opacity: 0.35;
   animation: float1 15s infinite ease-in-out;
 }
 
@@ -59,8 +59,8 @@
   transform: rotate(-30deg);
   top: -300px;
   left: 200px;
-  filter: blur(60px);
-  opacity: 0.6;
+  filter: blur(80px);
+  opacity: 0.3;
   animation: float2 18s infinite ease-in-out;
 }
 
@@ -70,8 +70,8 @@
   background: var(--ray-gradient-accent);
   top: -320px;
   left: 500px;
-  filter: blur(65px);
-  opacity: 0.5;
+  filter: blur(85px);
+  opacity: 0.25;
   animation: float3 20s infinite ease-in-out;
 }
 
@@ -81,8 +81,8 @@
   background: var(--ray-gradient-secondary);
   top: -350px;
   left: 800px;
-  filter: blur(55px);
-  opacity: 0.55;
+  filter: blur(75px);
+  opacity: 0.3;
   animation: float4 17s infinite ease-in-out;
 }
 
@@ -93,8 +93,8 @@
   transform: rotate(-45deg);
   top: -250px;
   left: 1000px;
-  filter: blur(45px);
-  opacity: 0.6;
+  filter: blur(65px);
+  opacity: 0.3;
   animation: float5 16s infinite ease-in-out;
 }
 
@@ -105,8 +105,8 @@
   transform: rotate(75deg);
   top: -400px;
   left: 600px;
-  filter: blur(75px);
-  opacity: 0.45;
+  filter: blur(95px);
+  opacity: 0.25;
   animation: float6 19s infinite ease-in-out;
 }
 
@@ -117,8 +117,8 @@
   transform: rotate(45deg);
   top: -450px;
   left: 350px;
-  filter: blur(65px);
-  opacity: 0.55;
+  filter: blur(85px);
+  opacity: 0.3;
   animation: float7 21s infinite ease-in-out;
 }
 
@@ -129,8 +129,8 @@
   transform: rotate(-60deg);
   top: -380px;
   left: 750px;
-  filter: blur(58px);
-  opacity: 0.6;
+  filter: blur(78px);
+  opacity: 0.3;
   animation: float8 14s infinite ease-in-out;
 }
 

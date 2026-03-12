@@ -352,11 +352,14 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
           <div className={classNames(styles.Chat, 'flex flex-col flex-grow lg:min-w-[var(--chat-min-width)] h-full')}>
             {!chatStarted && (
               <div id="intro" className="mt-[16vh] max-w-2xl mx-auto text-center px-4 lg:px-0">
-                <h1 className="text-3xl lg:text-6xl font-bold text-bolt-elements-textPrimary mb-4 animate-fade-in">
-                  Where ideas begin
+                <p className="text-xs lg:text-sm font-semibold tracking-[0.2em] uppercase text-[#8b949e] mb-4 animate-fade-in">
+                  GitHub Copilot <span className="inline-block w-2 h-2 bg-[#3fb950] rounded-sm ml-1 align-middle" />
+                </p>
+                <h1 className="text-3xl lg:text-6xl font-bold text-white mb-4 animate-fade-in">
+                  Command your craft
                 </h1>
-                <p className="text-md lg:text-xl mb-8 text-bolt-elements-textSecondary animate-fade-in animation-delay-200">
-                  Bring ideas to life in seconds or get help on existing projects.
+                <p className="text-md lg:text-xl mb-8 text-[#8b949e] animate-fade-in animation-delay-200">
+                  Your AI accelerator for every workflow, from the editor to the enterprise.
                 </p>
               </div>
             )}
@@ -479,16 +482,6 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                 </div>
               )}
               <div className="flex flex-col gap-5">
-                {!chatStarted &&
-                  ExamplePrompts((event, messageInput) => {
-                    if (isStreaming) {
-                      handleStop?.();
-                      return;
-                    }
-
-                    handleSendMessage?.(event, messageInput);
-                  })}
-                {!chatStarted && <StarterTemplates />}
               </div>
             </div>
           </div>

@@ -1,25 +1,54 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ClientOnly } from 'remix-utils/client-only';
 import { classNames } from '~/utils/classNames';
-import { PROVIDER_LIST } from '~/utils/constants';
-import { ModelSelector } from '~/components/chat/ModelSelector';
-import { APIKeyManager } from './APIKeyManager';
-import { LOCAL_PROVIDERS } from '~/lib/stores/settings';
 import FilePreview from './FilePreview';
 import { ScreenshotStateManager } from './ScreenshotStateManager';
-import { SendButton } from './SendButton.client';
 import { IconButton } from '~/components/ui/IconButton';
 import { toast } from 'react-toastify';
 import { SpeechRecognitionButton } from '~/components/chat/SpeechRecognition';
 import { SupabaseConnection } from './SupabaseConnection';
 import { ExpoQrModal } from '~/components/workbench/ExpoQrModal';
-import styles from './BaseChat.module.scss';
 import type { ProviderInfo } from '~/types/model';
 import { ColorSchemeDialog } from '~/components/ui/ColorSchemeDialog';
 import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import { McpTools } from './MCPTools';
 import { WebSearch } from './WebSearch.client';
+
+// Clean up long model IDs to shorter display names
+function formatModelName(model: string | undefined): string {
+  if (!model) {
+    return 'Select model';
+  }
+
+  // Common model name cleanups
+  const cleanups: [RegExp, string][] = [
+    [/^claude-sonnet-4-5-(\d+)$/, 'Claude Sonnet 4.5'],
+    [/^claude-opus-4-(\d+)$/, 'Claude Opus 4'],
+    [/^claude-sonnet-4-(\d+)$/, 'Claude Sonnet 4'],
+    [/^claude-3-5-sonnet-(\d+)$/, 'Claude 3.5 Sonnet'],
+    [/^claude-3-opus-(\d+)$/, 'Claude 3 Opus'],
+    [/^claude-3-haiku-(\d+)$/, 'Claude 3 Haiku'],
+    [/^gpt-4o-(.+)$/, 'GPT-4o'],
+    [/^gpt-4-(.+)$/, 'GPT-4'],
+    [/^gpt-3\.5-(.+)$/, 'GPT-3.5'],
+  ];
+
+  for (const [pattern, replacement] of cleanups) {
+    if (pattern.test(model)) {
+      return model.replace(pattern, replacement);
+    }
+  }
+
+  // Handle gemini models
+  if (model.startsWith('gemini-')) {
+    const name = model.replace(/^gemini-/, '').replace(/-\d{4,}$/, '').replace(/-/g, ' ');
+    return `Gemini ${name.charAt(0).toUpperCase() + name.slice(1)}`;
+  }
+
+  // Fallback: remove trailing date-like numbers and clean up
+  return model.replace(/-\d{8,}$/, '').replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 interface ChatBoxProps {
   isModelSettingsCollapsed: boolean;
@@ -66,207 +95,340 @@ interface ChatBoxProps {
 }
 
 export const ChatBox: React.FC<ChatBoxProps> = (props) => {
+  const [modeDropdownOpen, setModeDropdownOpen] = useState(false);
+  const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
+  const [isVoiceAgentMode, setIsVoiceAgentMode] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState('Rachel');
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const modeDropdownRef = useRef<HTMLDivElement>(null);
+  const modelDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (modeDropdownRef.current && !modeDropdownRef.current.contains(event.target as Node)) {
+        setModeDropdownOpen(false);
+      }
+
+      if (modelDropdownRef.current && !modelDropdownRef.current.contains(event.target as Node)) {
+        setModelDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <div
       className={classNames(
-        'relative bg-bolt-elements-background-depth-2 backdrop-blur p-3 rounded-lg border border-bolt-elements-borderColor relative w-full max-w-chat mx-auto z-prompt',
-
-        /*
-         * {
-         *   'sticky bottom-2': chatStarted,
-         * },
-         */
+        'relative w-full max-w-chat mx-auto z-prompt',
       )}
     >
-      <svg className={classNames(styles.PromptEffectContainer)}>
-        <defs>
-          <linearGradient
-            id="line-gradient"
-            x1="20%"
-            y1="0%"
-            x2="-14%"
-            y2="10%"
-            gradientUnits="userSpaceOnUse"
-            gradientTransform="rotate(-45)"
-          >
-            <stop offset="0%" stopColor="#b44aff" stopOpacity="0%"></stop>
-            <stop offset="40%" stopColor="#b44aff" stopOpacity="80%"></stop>
-            <stop offset="50%" stopColor="#b44aff" stopOpacity="80%"></stop>
-            <stop offset="100%" stopColor="#b44aff" stopOpacity="0%"></stop>
-          </linearGradient>
-          <linearGradient id="shine-gradient">
-            <stop offset="0%" stopColor="white" stopOpacity="0%"></stop>
-            <stop offset="40%" stopColor="#ffffff" stopOpacity="80%"></stop>
-            <stop offset="50%" stopColor="#ffffff" stopOpacity="80%"></stop>
-            <stop offset="100%" stopColor="white" stopOpacity="0%"></stop>
-          </linearGradient>
-        </defs>
-        <rect className={classNames(styles.PromptEffectLine)} pathLength="100" strokeLinecap="round"></rect>
-        <rect className={classNames(styles.PromptShine)} x="48" y="24" width="70" height="1"></rect>
-      </svg>
-      <div>
-        <ClientOnly>
-          {() => (
-            <div className={props.isModelSettingsCollapsed ? 'hidden' : ''}>
-              <ModelSelector
-                key={props.provider?.name + ':' + props.modelList.length}
-                model={props.model}
-                setModel={props.setModel}
-                modelList={props.modelList}
-                provider={props.provider}
-                setProvider={props.setProvider}
-                providerList={props.providerList || (PROVIDER_LIST as ProviderInfo[])}
-                apiKeys={props.apiKeys}
-                modelLoading={props.isModelLoading}
-              />
-              {(props.providerList || []).length > 0 &&
-                props.provider &&
-                !LOCAL_PROVIDERS.includes(props.provider.name) && (
-                  <APIKeyManager
-                    provider={props.provider}
-                    apiKey={props.apiKeys[props.provider.name] || ''}
-                    setApiKey={(key) => {
-                      props.onApiKeysChange(props.provider.name, key);
-                    }}
-                  />
-                )}
-            </div>
-          )}
-        </ClientOnly>
-      </div>
-      <FilePreview
-        files={props.uploadedFiles}
-        imageDataList={props.imageDataList}
-        onRemove={(index) => {
-          props.setUploadedFiles?.(props.uploadedFiles.filter((_, i) => i !== index));
-          props.setImageDataList?.(props.imageDataList.filter((_, i) => i !== index));
-        }}
-      />
-      <ClientOnly>
-        {() => (
-          <ScreenshotStateManager
-            setUploadedFiles={props.setUploadedFiles}
-            setImageDataList={props.setImageDataList}
-            uploadedFiles={props.uploadedFiles}
-            imageDataList={props.imageDataList}
-          />
-        )}
-      </ClientOnly>
-      {props.selectedElement && (
-        <div className="flex mx-1.5 gap-2 items-center justify-between rounded-lg rounded-b-none border border-b-none border-bolt-elements-borderColor text-bolt-elements-textPrimary flex py-1 px-2.5 font-medium text-xs">
-          <div className="flex gap-2 items-center lowercase">
-            <code className="bg-accent-500 rounded-4px px-1.5 py-1 mr-0.5 text-white">
-              {props?.selectedElement?.tagName}
-            </code>
-            selected for inspection
-          </div>
+      {/* Main Copilot-style input container */}
+      <div className="rounded-lg border border-[#3d3d3d]/60 bg-[#303030] overflow-hidden">
+        {/* Top bar: Add Context button */}
+        <div className="flex items-center gap-2 px-3 pt-2.5 pb-0">
           <button
-            className="bg-transparent text-accent-500 pointer-auto"
-            onClick={() => props.setSelectedElement?.(null)}
+            onClick={() => props.handleFileUpload()}
+            className="flex items-center gap-1.5 px-2 py-0.5 text-[13px] text-[#8b949e] hover:text-[#c9d1d9] bg-transparent hover:bg-[#3d3d3d] rounded transition-colors"
           >
-            Clear
+            <div className="i-ph:paperclip text-sm" />
+            <span>Add Context...</span>
           </button>
         </div>
-      )}
-      <div
-        className={classNames('relative shadow-xs border border-bolt-elements-borderColor backdrop-blur rounded-lg')}
-      >
-        <textarea
-          ref={props.textareaRef}
-          className={classNames(
-            'w-full pl-4 pt-4 pr-16 outline-none resize-none text-bolt-elements-textPrimary placeholder-bolt-elements-textTertiary bg-transparent text-sm',
-            'transition-all duration-200',
-            'hover:border-bolt-elements-focus',
-          )}
-          onDragEnter={(e) => {
-            e.preventDefault();
-            e.currentTarget.style.border = '2px solid #1488fc';
-          }}
-          onDragOver={(e) => {
-            e.preventDefault();
-            e.currentTarget.style.border = '2px solid #1488fc';
-          }}
-          onDragLeave={(e) => {
-            e.preventDefault();
-            e.currentTarget.style.border = '1px solid var(--bolt-elements-borderColor)';
-          }}
-          onDrop={(e) => {
-            e.preventDefault();
-            e.currentTarget.style.border = '1px solid var(--bolt-elements-borderColor)';
 
-            const files = Array.from(e.dataTransfer.files);
-            files.forEach((file) => {
-              if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-
-                reader.onload = (e) => {
-                  const base64Image = e.target?.result as string;
-                  props.setUploadedFiles?.([...props.uploadedFiles, file]);
-                  props.setImageDataList?.([...props.imageDataList, base64Image]);
-                };
-                reader.readAsDataURL(file);
-              }
-            });
+        <FilePreview
+          files={props.uploadedFiles}
+          imageDataList={props.imageDataList}
+          onRemove={(index) => {
+            props.setUploadedFiles?.(props.uploadedFiles.filter((_, i) => i !== index));
+            props.setImageDataList?.(props.imageDataList.filter((_, i) => i !== index));
           }}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              if (event.shiftKey) {
-                return;
-              }
-
-              event.preventDefault();
-
-              if (props.isStreaming) {
-                props.handleStop?.();
-                return;
-              }
-
-              // ignore if using input method engine
-              if (event.nativeEvent.isComposing) {
-                return;
-              }
-
-              props.handleSendMessage?.(event);
-            }
-          }}
-          value={props.input}
-          onChange={(event) => {
-            props.handleInputChange?.(event);
-          }}
-          onPaste={props.handlePaste}
-          style={{
-            minHeight: props.TEXTAREA_MIN_HEIGHT,
-            maxHeight: props.TEXTAREA_MAX_HEIGHT,
-          }}
-          placeholder={props.chatMode === 'build' ? 'How can Bolt help you today?' : 'What would you like to discuss?'}
-          translate="no"
         />
         <ClientOnly>
           {() => (
-            <SendButton
-              show={props.input.length > 0 || props.isStreaming || props.uploadedFiles.length > 0}
-              isStreaming={props.isStreaming}
-              disabled={!props.providerList || props.providerList.length === 0}
-              onClick={(event) => {
+            <ScreenshotStateManager
+              setUploadedFiles={props.setUploadedFiles}
+              setImageDataList={props.setImageDataList}
+              uploadedFiles={props.uploadedFiles}
+              imageDataList={props.imageDataList}
+            />
+          )}
+        </ClientOnly>
+        {props.selectedElement && (
+          <div className="flex mx-3 gap-2 items-center justify-between rounded-md border border-[#3d3d3d] text-[#c9d1d9] py-1 px-2.5 font-medium text-xs">
+            <div className="flex gap-2 items-center lowercase">
+              <code className="bg-accent-500 rounded px-1.5 py-0.5 text-white text-xs">
+                {props?.selectedElement?.tagName}
+              </code>
+              selected for inspection
+            </div>
+            <button
+              className="bg-transparent text-accent-500 hover:text-accent-400"
+              onClick={() => props.setSelectedElement?.(null)}
+            >
+              Clear
+            </button>
+          </div>
+        )}
+
+        {/* Textarea */}
+        <div className="relative px-3 py-1">
+          <textarea
+            ref={props.textareaRef}
+            className={classNames(
+              'w-full pl-1 pr-4 outline-none resize-none bg-transparent text-[13px] text-[#c9d1d9] placeholder-[#484f58]',
+              'transition-all duration-200',
+            )}
+            onDragEnter={(e) => {
+              e.preventDefault();
+              e.currentTarget.style.border = '2px solid #1488fc';
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.currentTarget.style.border = '2px solid #1488fc';
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              e.currentTarget.style.border = 'none';
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.currentTarget.style.border = 'none';
+
+              const files = Array.from(e.dataTransfer.files);
+              files.forEach((file) => {
+                if (file.type.startsWith('image/')) {
+                  const reader = new FileReader();
+
+                  reader.onload = (ev) => {
+                    const base64Image = ev.target?.result as string;
+                    props.setUploadedFiles?.([...props.uploadedFiles, file]);
+                    props.setImageDataList?.([...props.imageDataList, base64Image]);
+                  };
+                  reader.readAsDataURL(file);
+                }
+              });
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                if (event.shiftKey) {
+                  return;
+                }
+
+                event.preventDefault();
+
                 if (props.isStreaming) {
                   props.handleStop?.();
                   return;
                 }
 
-                if (props.input.length > 0 || props.uploadedFiles.length > 0) {
-                  props.handleSendMessage?.(event);
+                if (event.nativeEvent.isComposing) {
+                  return;
                 }
-              }}
-            />
-          )}
-        </ClientOnly>
-        <div className="flex justify-between items-center text-sm p-4 pt-2">
-          <div className="flex gap-1 items-center">
+
+                props.handleSendMessage?.(event);
+              }
+            }}
+            value={props.input}
+            onChange={(event) => {
+              props.handleInputChange?.(event);
+            }}
+            onPaste={props.handlePaste}
+            style={{
+              minHeight: props.TEXTAREA_MIN_HEIGHT,
+              maxHeight: props.TEXTAREA_MAX_HEIGHT,
+            }}
+            placeholder={isVoiceAgentMode ? 'Press the voice button to start talking...' : props.chatMode === 'build' ? 'Edit files in your workspace in agent mode' : 'What would you like to discuss?'}
+            translate="no"
+          />
+        </div>
+
+        {/* Bottom toolbar - Copilot style */}
+        <div className="flex items-center justify-between px-3 pb-2.5 pt-0.5">
+          {/* Left side: mode & model selectors */}
+          <div className="flex items-center gap-3">
+            {/* Agent/Mode dropdown */}
+            <div className="relative" ref={modeDropdownRef}>
+              <button
+                onClick={() => {
+                  setModeDropdownOpen(!modeDropdownOpen);
+                  setModelDropdownOpen(false);
+                }}
+                className="flex items-center gap-1 text-[13px] text-[#c9d1d9] hover:text-white bg-transparent border-none cursor-pointer transition-colors"
+              >
+                <span className="font-medium">{isVoiceAgentMode ? 'Voice Agent' : props.chatMode === 'discuss' ? 'Ask' : 'Agent'}</span>
+                <div className="i-ph:caret-down text-[10px] text-[#8b949e]" />
+              </button>
+
+              {/* Mode dropdown popup */}
+              {modeDropdownOpen && (
+                <div className="fixed w-[220px] bg-[#303030] border border-[#3d3d3d] rounded-md shadow-xl z-[9999] py-1 text-[13px]" style={{
+                  bottom: `${window.innerHeight - (modeDropdownRef.current?.getBoundingClientRect().top ?? 0) + 4}px`,
+                  left: `${modeDropdownRef.current?.getBoundingClientRect().left ?? 0}px`,
+                }}>
+                  <div className="px-3 py-1.5 text-[#8b949e] text-[11px] font-semibold uppercase tracking-wide">
+                    Built-In
+                  </div>
+                  <button
+                    onClick={() => {
+                      props.setChatMode?.('build');
+                      setIsVoiceAgentMode(false);
+                      setIsVoiceActive(false);
+                      setModeDropdownOpen(false);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-left text-[#c9d1d9] hover:bg-[#1f6feb]/30 bg-transparent border-none cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="w-4 text-center">{props.chatMode === 'build' && !isVoiceAgentMode ? '✓' : ''}</span>
+                      <span>Agent</span>
+                    </div>
+                    <span className="text-[11px] text-[#484f58]">⇧⌘I</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      props.setChatMode?.('build');
+                      setIsVoiceAgentMode(true);
+                      setModeDropdownOpen(false);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-left text-[#c9d1d9] hover:bg-[#1f6feb]/30 bg-transparent border-none cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="w-4 text-center">{isVoiceAgentMode ? '✓' : ''}</span>
+                      <div className="flex items-center gap-1.5">
+                        <div className="i-ph:microphone text-sm" />
+                        <span>Voice Agent</span>
+                      </div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      props.setChatMode?.('discuss');
+                      setIsVoiceAgentMode(false);
+                      setIsVoiceActive(false);
+                      setModeDropdownOpen(false);
+                    }}
+                    className="w-full flex items-center px-3 py-1.5 text-left text-[#c9d1d9] hover:bg-[#1f6feb]/30 bg-transparent border-none cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="w-4 text-center">{props.chatMode === 'discuss' && !isVoiceAgentMode ? '✓' : ''}</span>
+                      <span>Ask</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsVoiceAgentMode(false);
+                      setIsVoiceActive(false);
+                      setModeDropdownOpen(false);
+                    }}
+                    className="w-full flex items-center px-3 py-1.5 text-left text-[#c9d1d9] hover:bg-[#1f6feb]/30 bg-transparent border-none cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="w-4 text-center" />
+                      <span>Edit</span>
+                    </div>
+                  </button>
+                  <div className="border-t border-[#3d3d3d] my-1" />
+                  <button
+                    onClick={() => {
+                      props.setIsModelSettingsCollapsed(!props.isModelSettingsCollapsed);
+                      setModeDropdownOpen(false);
+                    }}
+                    className="w-full flex items-center px-3 py-1.5 text-left text-[#58a6ff] hover:bg-[#1f6feb]/30 bg-transparent border-none cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="w-4" />
+                      <span>Configure Modes...</span>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Model / Voice dropdown */}
+            <div className="relative" ref={modelDropdownRef}>
+              <button
+                onClick={() => {
+                  setModelDropdownOpen(!modelDropdownOpen);
+                  setModeDropdownOpen(false);
+                }}
+                className="flex items-center gap-1 text-[13px] text-[#8b949e] hover:text-[#c9d1d9] bg-transparent border-none cursor-pointer transition-colors"
+              >
+                <span>{isVoiceAgentMode ? selectedVoice : formatModelName(props.model)}</span>
+                <div className="i-ph:caret-down text-[10px] text-[#8b949e]" />
+              </button>
+
+              {/* Model/Voice dropdown popup */}
+              {modelDropdownOpen && !isVoiceAgentMode && (
+                <ModelDropdownPopup
+                  modelList={props.modelList}
+                  currentModel={props.model}
+                  anchorRef={modelDropdownRef}
+                  onSelectModel={(modelName) => {
+                    props.setModel?.(modelName);
+                    setModelDropdownOpen(false);
+                  }}
+                  onManageModels={() => {
+                    props.setIsModelSettingsCollapsed(!props.isModelSettingsCollapsed);
+                    setModelDropdownOpen(false);
+                  }}
+                />
+              )}
+              {modelDropdownOpen && isVoiceAgentMode && (
+                <VoiceDropdownPopup
+                  currentVoice={selectedVoice}
+                  anchorRef={modelDropdownRef}
+                  onSelectVoice={(voice) => {
+                    setSelectedVoice(voice);
+                    setModelDropdownOpen(false);
+                  }}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Right side: action icons + send */}
+          <div className="flex items-center gap-1">
+            {/* Voice Agent button - prominent when voice mode is active */}
+            {isVoiceAgentMode && (
+              <>
+                <style dangerouslySetInnerHTML={{ __html: `
+                  @keyframes voiceBar1 { 0%, 100% { transform: scaleY(0.4); } 50% { transform: scaleY(1); } }
+                  @keyframes voiceBar2 { 0%, 100% { transform: scaleY(0.6); } 50% { transform: scaleY(0.3); } }
+                  @keyframes voiceBar3 { 0%, 100% { transform: scaleY(0.8); } 50% { transform: scaleY(0.5); } }
+                  @keyframes voiceBar4 { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(0.9); } }
+                  @keyframes voiceBar5 { 0%, 100% { transform: scaleY(0.5); } 50% { transform: scaleY(0.7); } }
+                ` }} />
+                <button
+                  onClick={() => setIsVoiceActive(!isVoiceActive)}
+                  className={classNames(
+                    'flex items-center justify-center w-[34px] h-[34px] rounded-full transition-all border-none cursor-pointer mr-1',
+                    isVoiceActive
+                      ? 'bg-white text-[#0d1117] shadow-lg scale-105'
+                      : 'bg-[#3d3d3d] text-[#c9d1d9] hover:bg-[#4a4a4a] hover:text-white',
+                  )}
+                  style={isVoiceActive ? { boxShadow: '0 0 12px rgba(255,255,255,0.25)' } : {}}
+                  title={isVoiceActive ? 'Stop voice agent' : 'Start voice agent'}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="6" width="2.5" height="12" rx="1.25" fill="currentColor"
+                      style={isVoiceActive ? { transformOrigin: 'center', animation: 'voiceBar1 0.8s ease-in-out infinite' } : { transform: 'scaleY(0.5)', transformOrigin: 'center' }} />
+                    <rect x="6.5" y="3" width="2.5" height="18" rx="1.25" fill="currentColor"
+                      style={isVoiceActive ? { transformOrigin: 'center', animation: 'voiceBar2 0.6s ease-in-out infinite' } : { transform: 'scaleY(0.7)', transformOrigin: 'center' }} />
+                    <rect x="11" y="5" width="2.5" height="14" rx="1.25" fill="currentColor"
+                      style={isVoiceActive ? { transformOrigin: 'center', animation: 'voiceBar3 0.7s ease-in-out infinite' } : { transform: 'scaleY(0.6)', transformOrigin: 'center' }} />
+                    <rect x="15.5" y="2" width="2.5" height="20" rx="1.25" fill="currentColor"
+                      style={isVoiceActive ? { transformOrigin: 'center', animation: 'voiceBar4 0.5s ease-in-out infinite' } : { transform: 'scaleY(0.8)', transformOrigin: 'center' }} />
+                    <rect x="20" y="7" width="2.5" height="10" rx="1.25" fill="currentColor"
+                      style={isVoiceActive ? { transformOrigin: 'center', animation: 'voiceBar5 0.9s ease-in-out infinite' } : { transform: 'scaleY(0.5)', transformOrigin: 'center' }} />
+                  </svg>
+                </button>
+              </>
+            )}
             <ColorSchemeDialog designScheme={props.designScheme} setDesignScheme={props.setDesignScheme} />
             <McpTools />
-            <IconButton title="Upload file" className="transition-all" onClick={() => props.handleFileUpload()}>
-              <div className="i-ph:paperclip text-xl"></div>
-            </IconButton>
             <WebSearch onSearchResult={(result) => props.onWebSearchResult?.(result)} disabled={props.isStreaming} />
             <IconButton
               title="Enhance prompt"
@@ -278,60 +440,329 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               }}
             >
               {props.enhancingPrompt ? (
-                <div className="i-svg-spinners:90-ring-with-bg text-bolt-elements-loader-progress text-xl animate-spin"></div>
+                <div className="i-svg-spinners:90-ring-with-bg text-base animate-spin"></div>
               ) : (
-                <div className="i-bolt:stars text-xl"></div>
+                <div className="i-bolt:stars text-base"></div>
               )}
             </IconButton>
-
             <SpeechRecognitionButton
               isListening={props.isListening}
               onStart={props.startListening}
               onStop={props.stopListening}
               disabled={props.isStreaming}
             />
-            {props.chatStarted && (
-              <IconButton
-                title="Discuss"
-                className={classNames(
-                  'transition-all flex items-center gap-1 px-1.5',
-                  props.chatMode === 'discuss'
-                    ? '!bg-bolt-elements-item-backgroundAccent !text-bolt-elements-item-contentAccent'
-                    : 'bg-bolt-elements-item-backgroundDefault text-bolt-elements-item-contentDefault',
-                )}
-                onClick={() => {
-                  props.setChatMode?.(props.chatMode === 'discuss' ? 'build' : 'discuss');
-                }}
-              >
-                <div className={`i-ph:chats text-xl`} />
-                {props.chatMode === 'discuss' ? <span>Discuss</span> : <span />}
-              </IconButton>
-            )}
-            <IconButton
-              title="Model Settings"
-              className={classNames('transition-all flex items-center gap-1', {
-                'bg-bolt-elements-item-backgroundAccent text-bolt-elements-item-contentAccent':
-                  props.isModelSettingsCollapsed,
-                'bg-bolt-elements-item-backgroundDefault text-bolt-elements-item-contentDefault':
-                  !props.isModelSettingsCollapsed,
-              })}
-              onClick={() => props.setIsModelSettingsCollapsed(!props.isModelSettingsCollapsed)}
+
+            {/* Send / Stop button */}
+            <button
+              onClick={(event) => {
+                if (props.isStreaming) {
+                  props.handleStop?.();
+                  return;
+                }
+
+                if (props.input.length > 0 || props.uploadedFiles.length > 0) {
+                  props.handleSendMessage?.(event);
+                }
+              }}
               disabled={!props.providerList || props.providerList.length === 0}
+              className={classNames(
+                'flex items-center justify-center w-[26px] h-[26px] rounded transition-all bg-transparent border-none',
+                props.input.length > 0 || props.isStreaming || props.uploadedFiles.length > 0
+                  ? 'text-[#c9d1d9] hover:text-white cursor-pointer'
+                  : 'text-[#484f58] cursor-default',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+              )}
             >
-              <div className={`i-ph:caret-${props.isModelSettingsCollapsed ? 'right' : 'down'} text-lg`} />
-              {props.isModelSettingsCollapsed ? <span className="text-xs">{props.model}</span> : <span />}
-            </IconButton>
+              {props.isStreaming ? (
+                <div className="i-ph:stop-fill text-base" />
+              ) : (
+                <div className="i-ph:play-fill text-base" />
+              )}
+            </button>
+            <div className="i-ph:caret-down text-[10px] text-[#484f58] -ml-1" />
           </div>
-          {props.input.length > 3 ? (
-            <div className="text-xs text-bolt-elements-textTertiary">
-              Use <kbd className="kdb px-1.5 py-0.5 rounded bg-bolt-elements-background-depth-2">Shift</kbd> +{' '}
-              <kbd className="kdb px-1.5 py-0.5 rounded bg-bolt-elements-background-depth-2">Return</kbd> a new line
-            </div>
-          ) : null}
-          <SupabaseConnection />
-          <ExpoQrModal open={props.qrModalOpen} onClose={() => props.setQrModalOpen(false)} />
         </div>
       </div>
+      <SupabaseConnection />
+      <ExpoQrModal open={props.qrModalOpen} onClose={() => props.setQrModalOpen(false)} />
     </div>
   );
 };
+
+// Model dropdown popup component matching GitHub Copilot's design
+interface ModelDropdownPopupProps {
+  modelList: any[];
+  currentModel: string | undefined;
+  onSelectModel: (modelName: string) => void;
+  onManageModels: () => void;
+  anchorRef?: React.RefObject<HTMLDivElement>;
+}
+
+// Hardcoded model list matching GitHub Copilot exactly
+const COPILOT_STANDARD_MODELS = [
+  { displayName: 'GPT-4.1', badge: 'Included' },
+  { displayName: 'GPT-4o', badge: 'Included' },
+  { displayName: 'GPT-5 mini', badge: 'Included' },
+  { displayName: 'Raptor mini', badge: 'Preview · Included' },
+];
+
+const COPILOT_PREMIUM_MODELS = [
+  { displayName: 'Claude Haiku 4.5', badge: '0.33x' },
+  { displayName: 'Claude Opus 4.5', badge: '3x' },
+  { displayName: 'Claude Opus 4.6', badge: '3x' },
+  { displayName: 'Claude Opus 4.6 fast mode', badge: 'Preview · 30x' },
+  { displayName: 'Claude Sonnet 4', badge: '1x' },
+  { displayName: 'Claude Sonnet 4.5', badge: '1x' },
+  { displayName: 'Claude Sonnet 4.6', badge: '1x' },
+  { displayName: 'Gemini 2.5 Pro', badge: '1x' },
+  { displayName: 'Gemini 3 Flash', badge: 'Preview · 0.33x' },
+  { displayName: 'Gemini 3 Pro', badge: 'Preview · 1x' },
+  { displayName: 'Gemini 3.1 Pro', badge: 'Preview · 1x' },
+  { displayName: 'GPT-5.1', badge: '1x' },
+  { displayName: 'GPT-5.1-Codex', badge: '1x' },
+  { displayName: 'GPT-5.1-Codex-Max', badge: '1x' },
+  { displayName: 'GPT-5.1-Codex-Mini', badge: 'Preview · 0.33x' },
+  { displayName: 'GPT-5.2', badge: '1x' },
+  { displayName: 'GPT-5.2-Codex', badge: '1x' },
+  { displayName: 'GPT-5.3-Codex', badge: '1x' },
+  { displayName: 'GPT-5.4', badge: '1x' },
+  { displayName: 'Grok Code Fast 1', badge: '0.25x' },
+];
+
+// Map from display names to actual model IDs in the system
+function findMatchingModelId(displayName: string, modelList: any[]): string | undefined {
+  const lower = displayName.toLowerCase().replace(/[\s.-]+/g, '');
+
+  for (const m of modelList) {
+    const mLower = (m.label || m.name || '').toLowerCase().replace(/[\s.-]+/g, '');
+    const mNameLower = (m.name || '').toLowerCase().replace(/[\s.-]+/g, '');
+
+    if (mLower === lower || mNameLower === lower) {
+      return m.name;
+    }
+  }
+
+  // Fuzzy: check if display name is contained
+  for (const m of modelList) {
+    const mLower = (m.label || m.name || '').toLowerCase();
+
+    if (mLower.includes(displayName.toLowerCase().replace(/\s+/g, '-'))) {
+      return m.name;
+    }
+  }
+
+  return undefined;
+}
+
+function ModelDropdownPopup({ modelList, currentModel, onSelectModel, onManageModels, anchorRef }: ModelDropdownPopupProps) {
+  // Try to map Copilot display names to actual model IDs
+  const standardModels = COPILOT_STANDARD_MODELS.map((m) => ({
+    ...m,
+    modelId: findMatchingModelId(m.displayName, modelList),
+  }));
+
+  const premiumModels = COPILOT_PREMIUM_MODELS.map((m) => ({
+    ...m,
+    modelId: findMatchingModelId(m.displayName, modelList),
+  }));
+
+  // Determine current display name for check mark
+  const currentDisplayName = formatModelName(currentModel);
+
+  const rect = anchorRef?.current?.getBoundingClientRect();
+
+  return (
+    <div
+      className="fixed w-[340px] max-h-[420px] overflow-y-auto bg-[#303030] border border-[#3d3d3d] rounded-md shadow-xl z-[9999] py-1 text-[13px]"
+      style={{
+        scrollbarWidth: 'thin',
+        scrollbarColor: '#3d3d3d transparent',
+        bottom: rect ? `${window.innerHeight - rect.top + 4}px` : undefined,
+        left: rect ? `${rect.left}px` : undefined,
+      }}
+    >
+      {/* Standard Models */}
+      <div className="px-3 py-1.5 text-[#8b949e] text-[11px] font-semibold uppercase tracking-wide">
+        Standard Models
+      </div>
+      {standardModels.map((model) => {
+        const isSelected = model.modelId === currentModel || model.displayName === currentDisplayName;
+
+        return (
+          <button
+            key={model.displayName}
+            onClick={() => {
+              if (model.modelId) {
+                onSelectModel(model.modelId);
+              }
+            }}
+            className={classNames(
+              'w-full flex items-center justify-between px-3 py-1.5 text-left bg-transparent border-none cursor-pointer transition-colors',
+              isSelected
+                ? 'text-[#c9d1d9] bg-[#1f6feb]/20'
+                : model.modelId
+                  ? 'text-[#c9d1d9] hover:bg-[#1f6feb]/30'
+                  : 'text-[#484f58] cursor-default',
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-4 text-center text-sm">{isSelected ? '✓' : ''}</span>
+              <span>{model.displayName}</span>
+            </div>
+            <span className="text-[11px] text-[#484f58]">{model.badge}</span>
+          </button>
+        );
+      })}
+
+      {/* Premium Models */}
+      <div className="px-3 py-1.5 mt-1 text-[#8b949e] text-[11px] font-semibold uppercase tracking-wide">
+        Premium Models
+      </div>
+      {premiumModels.map((model) => {
+        const isSelected = model.modelId === currentModel || model.displayName === currentDisplayName;
+
+        return (
+          <button
+            key={model.displayName}
+            onClick={() => {
+              if (model.modelId) {
+                onSelectModel(model.modelId);
+              }
+            }}
+            className={classNames(
+              'w-full flex items-center justify-between px-3 py-1.5 text-left bg-transparent border-none cursor-pointer transition-colors',
+              isSelected
+                ? 'text-[#c9d1d9] bg-[#1f6feb]/20'
+                : model.modelId
+                  ? 'text-[#c9d1d9] hover:bg-[#1f6feb]/30'
+                  : 'text-[#484f58] cursor-default',
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-4 text-center text-sm">{isSelected ? '✓' : ''}</span>
+              <span>{model.displayName}</span>
+            </div>
+            <span className="text-[11px] text-[#484f58]">{model.badge}</span>
+          </button>
+        );
+      })}
+
+      <div className="border-t border-[#3d3d3d] my-1" />
+      <button
+        onClick={onManageModels}
+        className="w-full flex items-center px-3 py-1.5 text-left text-[#58a6ff] hover:bg-[#1f6feb]/30 bg-transparent border-none cursor-pointer transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <span className="w-4" />
+          <span>Manage Models...</span>
+        </div>
+      </button>
+    </div>
+  );
+}
+
+// ElevenLabs Voices for Voice Agent mode
+const ELEVENLABS_VOICES = {
+  'Conversational': [
+    { name: 'Rachel', description: 'Calm, warm female', accent: 'American' },
+    { name: 'Drew', description: 'Confident, well-rounded male', accent: 'American' },
+    { name: 'Clyde', description: 'Gruff, deep male', accent: 'American' },
+    { name: 'Paul', description: 'Ground, narration male', accent: 'American' },
+    { name: 'Domi', description: 'Strong, clear female', accent: 'American' },
+    { name: 'Dave', description: 'Conversational, British male', accent: 'British-Essex' },
+    { name: 'Fin', description: 'Lively, Irish male', accent: 'Irish' },
+    { name: 'Sarah', description: 'Soft, news female', accent: 'American' },
+    { name: 'Antoni', description: 'Crisp, well-rounded male', accent: 'American' },
+    { name: 'Thomas', description: 'Calm, steady male', accent: 'American' },
+    { name: 'Charlie', description: 'Casual, Australian male', accent: 'Australian' },
+    { name: 'Emily', description: 'Calm, sweet female', accent: 'American' },
+  ],
+  'Narration': [
+    { name: 'Aria', description: 'Expressive, broadcast female', accent: 'American' },
+    { name: 'Roger', description: 'Deep, confident male', accent: 'American' },
+    { name: 'Jessica', description: 'Expressive, engaging female', accent: 'American' },
+    { name: 'Eric', description: 'Friendly, middle-aged male', accent: 'American' },
+    { name: 'Chris', description: 'Casual, smooth male', accent: 'American' },
+    { name: 'Brian', description: 'Deep, narrator male', accent: 'American' },
+    { name: 'Daniel', description: 'Authoritative, British male', accent: 'British' },
+    { name: 'Lily', description: 'Warm, British female', accent: 'British' },
+    { name: 'Bill', description: 'Trustworthy, documentary male', accent: 'American' },
+  ],
+};
+
+interface VoiceDropdownPopupProps {
+  currentVoice: string;
+  anchorRef?: React.RefObject<HTMLDivElement>;
+  onSelectVoice: (voice: string) => void;
+}
+
+function VoiceDropdownPopup({ currentVoice, anchorRef, onSelectVoice }: VoiceDropdownPopupProps) {
+  const rect = anchorRef?.current?.getBoundingClientRect();
+
+  return (
+    <div
+      className="fixed w-[320px] max-h-[420px] overflow-y-auto bg-[#303030] border border-[#3d3d3d] rounded-md shadow-xl z-[9999] py-1 text-[13px]"
+      style={{
+        scrollbarWidth: 'thin',
+        scrollbarColor: '#3d3d3d transparent',
+        bottom: rect ? `${window.innerHeight - rect.top + 4}px` : undefined,
+        left: rect ? `${rect.left}px` : undefined,
+      }}
+    >
+      {/* Header */}
+      <div className="px-3 py-2 flex items-center gap-2 border-b border-[#3d3d3d] mb-1">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="9" width="2.5" height="6" rx="1.25" fill="#8b949e" />
+          <rect x="6.5" y="6" width="2.5" height="12" rx="1.25" fill="#8b949e" />
+          <rect x="11" y="8" width="2.5" height="8" rx="1.25" fill="#8b949e" />
+          <rect x="15.5" y="5" width="2.5" height="14" rx="1.25" fill="#8b949e" />
+          <rect x="20" y="9" width="2.5" height="6" rx="1.25" fill="#8b949e" />
+        </svg>
+        <span className="text-[12px] text-[#8b949e] font-semibold">ElevenLabs Agents</span>
+      </div>
+
+      {Object.entries(ELEVENLABS_VOICES).map(([category, voices]) => (
+        <div key={category}>
+          <div className="px-3 py-1.5 text-[#8b949e] text-[11px] font-semibold uppercase tracking-wide">
+            {category}
+          </div>
+          {voices.map((voice) => {
+            const isSelected = voice.name === currentVoice;
+
+            return (
+              <button
+                key={voice.name}
+                onClick={() => onSelectVoice(voice.name)}
+                className={classNames(
+                  'w-full flex items-center justify-between px-3 py-1.5 text-left bg-transparent border-none cursor-pointer transition-colors',
+                  isSelected
+                    ? 'text-[#c9d1d9] bg-[#1f6feb]/20'
+                    : 'text-[#c9d1d9] hover:bg-[#1f6feb]/30',
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="w-4 text-center text-sm">{isSelected ? '✓' : ''}</span>
+                  <div className="flex flex-col">
+                    <span>{voice.name}</span>
+                    <span className="text-[10px] text-[#484f58]">{voice.description}</span>
+                  </div>
+                </div>
+                <span className="text-[10px] text-[#484f58] bg-[#3d3d3d] px-1.5 py-0.5 rounded">{voice.accent}</span>
+              </button>
+            );
+          })}
+        </div>
+      ))}
+
+      <div className="border-t border-[#3d3d3d] my-1" />
+      <button
+        className="w-full flex items-center px-3 py-1.5 text-left text-[#58a6ff] hover:bg-[#1f6feb]/30 bg-transparent border-none cursor-pointer transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <span className="w-4" />
+          <span>Manage Voices...</span>
+        </div>
+      </button>
+    </div>
+  );
+}
