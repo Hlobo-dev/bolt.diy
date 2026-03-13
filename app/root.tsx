@@ -23,11 +23,6 @@ const toastAnimation = cssTransition({
 });
 
 export const links: LinksFunction = () => [
-  {
-    rel: 'icon',
-    href: '/favicon.svg',
-    type: 'image/svg+xml',
-  },
   { rel: 'stylesheet', href: reactToastifyStyles },
   { rel: 'stylesheet', href: tailwindReset },
   { rel: 'stylesheet', href: globalStyles },

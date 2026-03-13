@@ -94,10 +94,22 @@ export const selectStarterTemplate = async (options: { message: string; model: s
     method: 'POST',
     body: JSON.stringify(requestBody),
   });
+
+  if (!response.ok) {
+    console.warn('LLM call failed with status:', response.status, '- using blank template');
+    return { template: 'blank', title: '' };
+  }
+
   const respJson: { text: string } = await response.json();
   console.log(respJson);
 
   const { text } = respJson;
+
+  if (!text) {
+    console.warn('LLM call returned empty text - using blank template');
+    return { template: 'blank', title: '' };
+  }
+
   const selectedTemplate = parseSelectedTemplate(text);
 
   if (selectedTemplate) {

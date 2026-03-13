@@ -637,60 +637,21 @@ interface ModelDropdownPopupProps {
   anchorRef?: React.RefObject<HTMLDivElement>;
 }
 
-// Hardcoded model list matching GitHub Copilot exactly
-const COPILOT_STANDARD_MODELS = [
-  { displayName: 'GPT-4.1', badge: 'Included' },
-  { displayName: 'GPT-4o', badge: 'Included' },
-  { displayName: 'GPT-5 mini', badge: 'Included' },
-  { displayName: 'Raptor mini', badge: 'Preview · Included' },
-];
-
-const COPILOT_PREMIUM_MODELS = [
-  { displayName: 'Claude Haiku 4.5', badge: '0.33x' },
-  { displayName: 'Claude Opus 4.5', badge: '3x' },
-  { displayName: 'Claude Opus 4.6', badge: '3x' },
-  { displayName: 'Claude Opus 4.6 fast mode', badge: 'Preview · 30x' },
-  { displayName: 'Claude Sonnet 4', badge: '1x' },
-  { displayName: 'Claude Sonnet 4.5', badge: '1x' },
-  { displayName: 'Claude Sonnet 4.6', badge: '1x' },
-  { displayName: 'Gemini 2.5 Pro', badge: '1x' },
-  { displayName: 'Gemini 3 Flash', badge: 'Preview · 0.33x' },
-  { displayName: 'Gemini 3 Pro', badge: 'Preview · 1x' },
-  { displayName: 'Gemini 3.1 Pro', badge: 'Preview · 1x' },
-  { displayName: 'GPT-5.1', badge: '1x' },
-  { displayName: 'GPT-5.1-Codex', badge: '1x' },
-  { displayName: 'GPT-5.1-Codex-Max', badge: '1x' },
-  { displayName: 'GPT-5.1-Codex-Mini', badge: 'Preview · 0.33x' },
-  { displayName: 'GPT-5.2', badge: '1x' },
-  { displayName: 'GPT-5.2-Codex', badge: '1x' },
-  { displayName: 'GPT-5.3-Codex', badge: '1x' },
-  { displayName: 'GPT-5.4', badge: '1x' },
-  { displayName: 'Grok Code Fast 1', badge: '0.25x' },
-];
-
-// Map from display names to actual model IDs in the system
-function findMatchingModelId(displayName: string, modelList: any[]): string | undefined {
-  const lower = displayName.toLowerCase().replace(/[\s.-]+/g, '');
+// Group models by provider for display
+function groupModelsByProvider(modelList: any[]): Record<string, any[]> {
+  const groups: Record<string, any[]> = {};
 
   for (const m of modelList) {
-    const mLower = (m.label || m.name || '').toLowerCase().replace(/[\s.-]+/g, '');
-    const mNameLower = (m.name || '').toLowerCase().replace(/[\s.-]+/g, '');
+    const provider = m.provider || 'Other';
 
-    if (mLower === lower || mNameLower === lower) {
-      return m.name;
+    if (!groups[provider]) {
+      groups[provider] = [];
     }
+
+    groups[provider].push(m);
   }
 
-  // Fuzzy: check if display name is contained
-  for (const m of modelList) {
-    const mLower = (m.label || m.name || '').toLowerCase();
-
-    if (mLower.includes(displayName.toLowerCase().replace(/\s+/g, '-'))) {
-      return m.name;
-    }
-  }
-
-  return undefined;
+  return groups;
 }
 
 function ModelDropdownPopup({
@@ -700,19 +661,8 @@ function ModelDropdownPopup({
   onManageModels,
   anchorRef,
 }: ModelDropdownPopupProps) {
-  // Try to map Copilot display names to actual model IDs
-  const standardModels = COPILOT_STANDARD_MODELS.map((m) => ({
-    ...m,
-    modelId: findMatchingModelId(m.displayName, modelList),
-  }));
-
-  const premiumModels = COPILOT_PREMIUM_MODELS.map((m) => ({
-    ...m,
-    modelId: findMatchingModelId(m.displayName, modelList),
-  }));
-
-  // Determine current display name for check mark
-  const currentDisplayName = formatModelName(currentModel);
+  const grouped = groupModelsByProvider(modelList);
+  const providers = Object.keys(grouped).sort();
 
   const rect = anchorRef?.current?.getBoundingClientRect();
 
@@ -726,71 +676,36 @@ function ModelDropdownPopup({
         left: rect ? `${rect.left}px` : undefined,
       }}
     >
-      {/* Standard Models */}
-      <div className="px-3 py-1.5 text-[#8b949e] text-[11px] font-semibold uppercase tracking-wide">
-        Standard Models
-      </div>
-      {standardModels.map((model) => {
-        const isSelected = model.modelId === currentModel || model.displayName === currentDisplayName;
+      {providers.map((providerName) => (
+        <div key={providerName}>
+          <div className="px-3 py-1.5 text-[#8b949e] text-[11px] font-semibold uppercase tracking-wide">
+            {providerName}
+          </div>
+          {grouped[providerName].map((model: any) => {
+            const isSelected = model.name === currentModel;
 
-        return (
-          <button
-            key={model.displayName}
-            onClick={() => {
-              if (model.modelId) {
-                onSelectModel(model.modelId);
-              }
-            }}
-            className={classNames(
-              'w-full flex items-center justify-between px-3 py-1.5 text-left bg-transparent border-none cursor-pointer transition-colors',
-              isSelected
-                ? 'text-[#c9d1d9] bg-[#1f6feb]/20'
-                : model.modelId
-                  ? 'text-[#c9d1d9] hover:bg-[#1f6feb]/30'
-                  : 'text-[#484f58] cursor-default',
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <span className="w-4 text-center text-sm">{isSelected ? '✓' : ''}</span>
-              <span>{model.displayName}</span>
-            </div>
-            <span className="text-[11px] text-[#484f58]">{model.badge}</span>
-          </button>
-        );
-      })}
+            return (
+              <button
+                key={model.name}
+                onClick={() => onSelectModel(model.name)}
+                className={classNames(
+                  'w-full flex items-center justify-between px-3 py-1.5 text-left bg-transparent border-none cursor-pointer transition-colors',
+                  isSelected ? 'text-[#c9d1d9] bg-[#1f6feb]/20' : 'text-[#c9d1d9] hover:bg-[#1f6feb]/30',
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="w-4 text-center text-sm">{isSelected ? '✓' : ''}</span>
+                  <span>{model.label || formatModelName(model.name)}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      ))}
 
-      {/* Premium Models */}
-      <div className="px-3 py-1.5 mt-1 text-[#8b949e] text-[11px] font-semibold uppercase tracking-wide">
-        Premium Models
-      </div>
-      {premiumModels.map((model) => {
-        const isSelected = model.modelId === currentModel || model.displayName === currentDisplayName;
-
-        return (
-          <button
-            key={model.displayName}
-            onClick={() => {
-              if (model.modelId) {
-                onSelectModel(model.modelId);
-              }
-            }}
-            className={classNames(
-              'w-full flex items-center justify-between px-3 py-1.5 text-left bg-transparent border-none cursor-pointer transition-colors',
-              isSelected
-                ? 'text-[#c9d1d9] bg-[#1f6feb]/20'
-                : model.modelId
-                  ? 'text-[#c9d1d9] hover:bg-[#1f6feb]/30'
-                  : 'text-[#484f58] cursor-default',
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <span className="w-4 text-center text-sm">{isSelected ? '✓' : ''}</span>
-              <span>{model.displayName}</span>
-            </div>
-            <span className="text-[11px] text-[#484f58]">{model.badge}</span>
-          </button>
-        );
-      })}
+      {modelList.length === 0 && (
+        <div className="px-3 py-3 text-[#8b949e] text-center">No models available. Configure a provider first.</div>
+      )}
 
       <div className="border-t border-[#3d3d3d] my-1" />
       <button

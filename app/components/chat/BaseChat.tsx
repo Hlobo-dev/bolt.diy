@@ -353,7 +353,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
             })}
           >
             {!chatStarted && (
-              <div id="intro" className="mt-[16vh] max-w-2xl mx-auto text-center px-4 lg:px-0 relative z-10">
+              <div id="intro" className="mt-[16vh] max-w-2xl mx-auto text-center px-4 lg:px-0 relative z-1">
                 <p className="text-xs lg:text-sm font-semibold tracking-[0.2em] uppercase text-[#8b949e] mb-4 animate-fade-in">
                   GitHub Copilot <span className="inline-block w-2 h-2 bg-[#3fb950] rounded-sm ml-1 align-middle" />
                 </p>
