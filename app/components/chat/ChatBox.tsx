@@ -1078,6 +1078,115 @@ const ELEVENLABS_VOICES = {
   ],
 };
 
+function CircularFlag({ accent, size = 22 }: { accent: string; size?: number }) {
+  const flags: Record<string, React.ReactNode> = {
+    American: (
+      <svg width={size} height={size} viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+        <clipPath id="us-clip">
+          <circle cx="22" cy="22" r="22" />
+        </clipPath>
+        <g clipPath="url(#us-clip)">
+          <rect width="44" height="44" fill="#B22234" />
+          <rect y="3.38" width="44" height="3.38" fill="white" />
+          <rect y="10.15" width="44" height="3.38" fill="white" />
+          <rect y="16.92" width="44" height="3.38" fill="white" />
+          <rect y="23.69" width="44" height="3.38" fill="white" />
+          <rect y="30.46" width="44" height="3.38" fill="white" />
+          <rect y="37.23" width="44" height="3.38" fill="white" />
+          <rect width="17.6" height="23.69" fill="#3C3B6E" />
+          <g fill="white" fontSize="3.2" fontFamily="serif">
+            {[0, 1, 2, 3, 4].map((row) =>
+              [0, 1, 2, 3, 4, 5].map((col) => (
+                <circle key={`s1-${row}-${col}`} cx={1.5 + col * 2.9} cy={1.8 + row * 4.7} r="0.9" />
+              )),
+            )}
+            {[0, 1, 2, 3].map((row) =>
+              [0, 1, 2, 3, 4].map((col) => (
+                <circle key={`s2-${row}-${col}`} cx={2.95 + col * 2.9} cy={4.15 + row * 4.7} r="0.9" />
+              )),
+            )}
+          </g>
+        </g>
+        <circle cx="22" cy="22" r="21" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+      </svg>
+    ),
+    British: (
+      <svg width={size} height={size} viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+        <clipPath id="gb-clip">
+          <circle cx="22" cy="22" r="22" />
+        </clipPath>
+        <g clipPath="url(#gb-clip)">
+          <rect width="44" height="44" fill="#012169" />
+          <path d="M0,0 L44,44 M44,0 L0,44" stroke="white" strokeWidth="7" />
+          <path d="M0,0 L44,44 M44,0 L0,44" stroke="#C8102E" strokeWidth="4" />
+          <path d="M22,0 V44 M0,22 H44" stroke="white" strokeWidth="9" />
+          <path d="M22,0 V44 M0,22 H44" stroke="#C8102E" strokeWidth="5" />
+        </g>
+        <circle cx="22" cy="22" r="21" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+      </svg>
+    ),
+    Australian: (
+      <svg width={size} height={size} viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+        <clipPath id="au-clip">
+          <circle cx="22" cy="22" r="22" />
+        </clipPath>
+        <g clipPath="url(#au-clip)">
+          <rect width="44" height="44" fill="#00008B" />
+          <g transform="scale(0.5)">
+            <path d="M0,0 L44,44 M44,0 L0,44" stroke="white" strokeWidth="7" />
+            <path d="M0,0 L44,44 M44,0 L0,44" stroke="#C8102E" strokeWidth="4" />
+            <path d="M22,0 V44 M0,22 H44" stroke="white" strokeWidth="9" />
+            <path d="M22,0 V44 M0,22 H44" stroke="#C8102E" strokeWidth="5" />
+          </g>
+          <polygon points="16,32 17,35 20,35 17.5,37 18.5,40 16,38 13.5,40 14.5,37 12,35 15,35" fill="white" />
+          <polygon
+            points="32,12 32.7,14 35,14 33.2,15.3 33.8,17.5 32,16.2 30.2,17.5 30.8,15.3 29,14 31.3,14"
+            fill="white"
+          />
+          <polygon
+            points="36,22 36.5,23.5 38,23.5 36.8,24.5 37.2,26 36,25 34.8,26 35.2,24.5 34,23.5 35.5,23.5"
+            fill="white"
+          />
+          <polygon
+            points="32,30 32.5,31.5 34,31.5 32.8,32.5 33.2,34 32,33 30.8,34 31.2,32.5 30,31.5 31.5,31.5"
+            fill="white"
+          />
+          <polygon
+            points="28,24 28.4,25 29.5,25 28.6,25.7 29,26.7 28,26 27,26.7 27.4,25.7 26.5,25 27.6,25"
+            fill="white"
+          />
+        </g>
+        <circle cx="22" cy="22" r="21" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+      </svg>
+    ),
+  };
+
+  if (flags[accent]) {
+    return <>{flags[accent]}</>;
+  }
+
+  // Fallback: colored circle with first letter
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        background: '#3d3d3d',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 11,
+        color: '#8b949e',
+        border: '1px solid rgba(255,255,255,0.1)',
+        flexShrink: 0,
+      }}
+    >
+      {accent.charAt(0)}
+    </div>
+  );
+}
+
 interface VoiceDropdownPopupProps {
   currentVoice: string;
   anchorRef?: React.RefObject<HTMLDivElement>;
@@ -1131,7 +1240,7 @@ function VoiceDropdownPopup({ currentVoice, anchorRef, onSelectVoice }: VoiceDro
                     <span className="text-[10px] text-[#484f58]">{voice.description}</span>
                   </div>
                 </div>
-                <span className="text-[10px] text-[#484f58] bg-[#3d3d3d] px-1.5 py-0.5 rounded">{voice.accent}</span>
+                <CircularFlag accent={voice.accent} size={22} />
               </button>
             );
           })}
