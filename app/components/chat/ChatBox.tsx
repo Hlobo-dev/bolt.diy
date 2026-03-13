@@ -104,7 +104,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
   const [modeDropdownOpen, setModeDropdownOpen] = useState(false);
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const [isVoiceAgentMode, setIsVoiceAgentMode] = useState(false);
-  const [selectedVoice, setSelectedVoice] = useState('Rachel');
+  const [selectedVoice, setSelectedVoice] = useState('Chris');
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const modeDropdownRef = useRef<HTMLDivElement>(null);
   const modelDropdownRef = useRef<HTMLDivElement>(null);
@@ -141,10 +141,22 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
     },
   });
 
+  // Look up voice ID from the selected voice name
+  const getVoiceId = useCallback((voiceName: string): string => {
+    for (const voices of Object.values(ELEVENLABS_VOICES)) {
+      const found = voices.find((v) => v.name === voiceName);
+
+      if (found) {
+        return found.voiceId;
+      }
+    }
+    return ''; // empty = use agent's default voice
+  }, []);
+
   // Start/stop voice session when button is toggled
   useEffect(() => {
     if (isVoiceActive && !voice.isConnected && voice.status === 'idle') {
-      voice.startSession(selectedVoice);
+      voice.startSession(getVoiceId(selectedVoice));
     } else if (!isVoiceActive && voice.isConnected) {
       voice.endSession();
     }
@@ -904,32 +916,165 @@ function ModelDropdownPopup({
   );
 }
 
-// ElevenLabs Voices for Voice Agent mode
+/*
+ * ElevenLabs Voices — real voice IDs from the ElevenLabs API
+ * These are premade voices available on all ElevenLabs accounts
+ */
 const ELEVENLABS_VOICES = {
-  Conversational: [
-    { name: 'Rachel', description: 'Calm, warm female', accent: 'American' },
-    { name: 'Drew', description: 'Confident, well-rounded male', accent: 'American' },
-    { name: 'Clyde', description: 'Gruff, deep male', accent: 'American' },
-    { name: 'Paul', description: 'Ground, narration male', accent: 'American' },
-    { name: 'Domi', description: 'Strong, clear female', accent: 'American' },
-    { name: 'Dave', description: 'Conversational, British male', accent: 'British-Essex' },
-    { name: 'Fin', description: 'Lively, Irish male', accent: 'Irish' },
-    { name: 'Sarah', description: 'Soft, news female', accent: 'American' },
-    { name: 'Antoni', description: 'Crisp, well-rounded male', accent: 'American' },
-    { name: 'Thomas', description: 'Calm, steady male', accent: 'American' },
-    { name: 'Charlie', description: 'Casual, Australian male', accent: 'Australian' },
-    { name: 'Emily', description: 'Calm, sweet female', accent: 'American' },
+  Recommended: [
+    {
+      name: 'Chris',
+      voiceId: 'iP95p4xoKVk53GoZ742B',
+      description: 'Charming, down-to-earth',
+      accent: 'American',
+      gender: 'male',
+    },
+    {
+      name: 'Sarah',
+      voiceId: 'EXAVITQu4vr4xnSDxMaL',
+      description: 'Mature, reassuring, confident',
+      accent: 'American',
+      gender: 'female',
+    },
+    {
+      name: 'Charlie',
+      voiceId: 'IKne3meq5aSn9XLyUdCD',
+      description: 'Deep, confident, energetic',
+      accent: 'Australian',
+      gender: 'male',
+    },
+    {
+      name: 'River',
+      voiceId: 'SAz9YHcvj6GT2YYXdXww',
+      description: 'Relaxed, neutral, informative',
+      accent: 'American',
+      gender: 'neutral',
+    },
   ],
-  Narration: [
-    { name: 'Aria', description: 'Expressive, broadcast female', accent: 'American' },
-    { name: 'Roger', description: 'Deep, confident male', accent: 'American' },
-    { name: 'Jessica', description: 'Expressive, engaging female', accent: 'American' },
-    { name: 'Eric', description: 'Friendly, middle-aged male', accent: 'American' },
-    { name: 'Chris', description: 'Casual, smooth male', accent: 'American' },
-    { name: 'Brian', description: 'Deep, narrator male', accent: 'American' },
-    { name: 'Daniel', description: 'Authoritative, British male', accent: 'British' },
-    { name: 'Lily', description: 'Warm, British female', accent: 'British' },
-    { name: 'Bill', description: 'Trustworthy, documentary male', accent: 'American' },
+  Conversational: [
+    {
+      name: 'Roger',
+      voiceId: 'CwhRBWXzGAHq8TQ4Fs17',
+      description: 'Laid-back, casual, resonant',
+      accent: 'American',
+      gender: 'male',
+    },
+    {
+      name: 'Laura',
+      voiceId: 'FGY2WhTYpPnrIDTdsKH5',
+      description: 'Enthusiast, quirky attitude',
+      accent: 'American',
+      gender: 'female',
+    },
+    {
+      name: 'Jessica',
+      voiceId: 'cgSgspJ2msm6clMCkdW9',
+      description: 'Playful, bright, warm',
+      accent: 'American',
+      gender: 'female',
+    },
+    {
+      name: 'Eric',
+      voiceId: 'cjVigY5qzO86Huf0OWal',
+      description: 'Smooth, trustworthy',
+      accent: 'American',
+      gender: 'male',
+    },
+    {
+      name: 'Will',
+      voiceId: 'bIHbv24MWmeRgasZH58o',
+      description: 'Relaxed optimist',
+      accent: 'American',
+      gender: 'male',
+    },
+    {
+      name: 'Liam',
+      voiceId: 'TX3LPaxmHKxFdv7VOQHJ',
+      description: 'Energetic, social media creator',
+      accent: 'American',
+      gender: 'male',
+    },
+  ],
+  Professional: [
+    {
+      name: 'Alice',
+      voiceId: 'Xb7hH8MSUJpSbSDYk0k2',
+      description: 'Clear, engaging educator',
+      accent: 'British',
+      gender: 'female',
+    },
+    {
+      name: 'Matilda',
+      voiceId: 'XrExE9yKIg1WjnnlVkGX',
+      description: 'Knowledgeable, professional',
+      accent: 'American',
+      gender: 'female',
+    },
+    {
+      name: 'George',
+      voiceId: 'JBFqnCBsd6RMkjVDRZzb',
+      description: 'Warm, captivating storyteller',
+      accent: 'British',
+      gender: 'male',
+    },
+    {
+      name: 'Bella',
+      voiceId: 'hpp4J3VqNfWAUOO0d1Us',
+      description: 'Professional, bright, warm',
+      accent: 'American',
+      gender: 'female',
+    },
+    {
+      name: 'Brian',
+      voiceId: 'nPczCjzI2devNBz1zQrb',
+      description: 'Deep, resonant, comforting',
+      accent: 'American',
+      gender: 'male',
+    },
+    {
+      name: 'Daniel',
+      voiceId: 'onwK4e9ZLuTAKqWW03F9',
+      description: 'Steady broadcaster',
+      accent: 'British',
+      gender: 'male',
+    },
+    {
+      name: 'Lily',
+      voiceId: 'pFZP5JQG7iQjIQuC4Bku',
+      description: 'Velvety actress',
+      accent: 'British',
+      gender: 'female',
+    },
+    {
+      name: 'Bill',
+      voiceId: 'pqHfZKP75CvOlQylNhV4',
+      description: 'Wise, mature, balanced',
+      accent: 'American',
+      gender: 'male',
+    },
+  ],
+  Character: [
+    {
+      name: 'Callum',
+      voiceId: 'N2lVS1w4EtoT3dr4eOWO',
+      description: 'Husky trickster',
+      accent: 'American',
+      gender: 'male',
+    },
+    {
+      name: 'Harry',
+      voiceId: 'SOYHLrjzK2X1ezoPC6cr',
+      description: 'Fierce warrior',
+      accent: 'American',
+      gender: 'male',
+    },
+    {
+      name: 'Adam',
+      voiceId: 'pNInz6obpgDQGcFmaJgB',
+      description: 'Dominant, firm',
+      accent: 'American',
+      gender: 'male',
+    },
   ],
 };
 

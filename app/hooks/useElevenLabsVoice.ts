@@ -261,9 +261,10 @@ Please implement this application now. Build it completely with all the features
       updateStatus('connecting');
 
       try {
-        // 1. Get signed URL from our backend
-        const resp = await fetch('/api/voice-signed-url');
-        const data = (await resp.json()) as { signed_url?: string; error?: string };
+        // 1. Get signed URL from our backend (pass voice ID if provided)
+        const voiceParam = _voiceName ? `?voice_id=${encodeURIComponent(_voiceName)}` : '';
+        const resp = await fetch(`/api/voice-signed-url${voiceParam}`);
+        const data = (await resp.json()) as { signed_url?: string; overrides?: any; error?: string };
 
         if (data.error) {
           throw new Error(data.error);
@@ -276,9 +277,10 @@ Please implement this application now. Build it completely with all the features
         // 2. Request microphone permission
         await navigator.mediaDevices.getUserMedia({ audio: true });
 
-        // 3. Start ElevenLabs conversation
+        // 3. Start ElevenLabs conversation (with optional voice override)
         const conversation = await Conversation.startSession({
           signedUrl: data.signed_url,
+          overrides: data.overrides || undefined,
 
           onConnect: () => {
             console.log('[Voice] Connected to ElevenLabs');
