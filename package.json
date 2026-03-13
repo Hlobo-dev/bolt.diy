@@ -46,6 +46,7 @@
     "node": ">=18.18.0"
   },
   "dependencies": {
+    "@11labs/client": "^0.2.0",
     "@ai-sdk/amazon-bedrock": "1.0.6",
     "@ai-sdk/anthropic": "0.0.39",
     "@ai-sdk/cerebras": "^0.2.16",

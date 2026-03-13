@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ClientOnly } from 'remix-utils/client-only';
 import { classNames } from '~/utils/classNames';
 import FilePreview from './FilePreview';
@@ -13,6 +13,7 @@ import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import { McpTools } from './MCPTools';
 import { WebSearch } from './WebSearch.client';
+import { useElevenLabsVoice } from '~/hooks/useElevenLabsVoice';
 
 // Clean up long model IDs to shorter display names
 function formatModelName(model: string | undefined): string {
@@ -107,6 +108,54 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const modeDropdownRef = useRef<HTMLDivElement>(null);
   const modelDropdownRef = useRef<HTMLDivElement>(null);
+
+  // ElevenLabs Voice Agent integration — stays alive during coding
+  const handleReadyToBuild = useCallback(
+    (compiledPrompt: string) => {
+      toast.success('🎙️ Voice agent → coding mode. Keep talking!');
+      props.handleSendMessage?.({ preventDefault: () => {} } as any, compiledPrompt);
+    },
+    [props.handleSendMessage],
+  );
+
+  const handleVoiceInterrupt = useCallback(
+    (instruction: string) => {
+      // User spoke during coding — send as a follow-up message to bolt
+      toast.info('🎙️ Voice interrupt received');
+      props.handleSendMessage?.({ preventDefault: () => {} } as any, `[Voice instruction]: ${instruction}`);
+    },
+    [props.handleSendMessage],
+  );
+
+  const voice = useElevenLabsVoice({
+    onReadyToBuild: handleReadyToBuild,
+    onVoiceInterrupt: handleVoiceInterrupt,
+    onStatusChange: (s) => {
+      if (s === 'error') {
+        toast.error('Voice connection error. Check your ElevenLabs API key.');
+      }
+    },
+    onError: (err) => {
+      toast.error(`Voice error: ${err}`);
+      setIsVoiceActive(false);
+    },
+  });
+
+  // Start/stop voice session when button is toggled
+  useEffect(() => {
+    if (isVoiceActive && !voice.isConnected && voice.status === 'idle') {
+      voice.startSession(selectedVoice);
+    } else if (!isVoiceActive && voice.isConnected) {
+      voice.endSession();
+    }
+  }, [isVoiceActive]);
+
+  // Notify voice agent when coding completes
+  useEffect(() => {
+    if (voice.isCoding && !props.isStreaming) {
+      voice.notifyCodingComplete();
+    }
+  }, [props.isStreaming, voice.isCoding]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -238,6 +287,140 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               Clear
             </button>
           </div>
+        )}
+
+        {/* Voice Agent — Full Immersive UI */}
+        {isVoiceAgentMode && isVoiceActive && (
+          <>
+            {/* Inject pulse/glow animations */}
+            <style
+              dangerouslySetInnerHTML={{
+                __html: `
+              @keyframes voicePulse { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.15); opacity: 1; } }
+              @keyframes voiceRing { 0% { transform: scale(0.8); opacity: 0.8; } 100% { transform: scale(2); opacity: 0; } }
+              @keyframes codingPulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+            `,
+              }}
+            />
+
+            {/* Status bar with pulsing orb */}
+            <div className="flex items-center gap-3 px-4 py-2">
+              {/* Pulsing orb indicator */}
+              <div className="relative flex items-center justify-center w-6 h-6">
+                {/* Outer ring (only when speaking/listening) */}
+                {(voice.status === 'speaking' || voice.status === 'listening') && (
+                  <div
+                    className="absolute inset-0 rounded-full"
+                    style={{
+                      background: voice.status === 'speaking' ? 'rgba(99, 102, 241, 0.3)' : 'rgba(34, 197, 94, 0.3)',
+                      animation: 'voiceRing 2s ease-out infinite',
+                    }}
+                  />
+                )}
+                {/* Core orb */}
+                <div
+                  className={classNames('w-3 h-3 rounded-full', {
+                    'bg-green-400': voice.status === 'listening',
+                    'bg-indigo-400': voice.status === 'speaking',
+                    'bg-amber-400': voice.status === 'connecting',
+                    'bg-cyan-400': voice.status === 'coding',
+                    'bg-red-400': voice.status === 'error',
+                    'bg-gray-500': voice.status === 'idle' || voice.status === 'disconnected',
+                  })}
+                  style={{
+                    animation:
+                      voice.status !== 'idle' && voice.status !== 'error' && voice.status !== 'disconnected'
+                        ? 'voicePulse 1.5s ease-in-out infinite'
+                        : 'none',
+                    boxShadow:
+                      voice.status === 'listening'
+                        ? '0 0 8px rgba(34,197,94,0.5)'
+                        : voice.status === 'speaking'
+                          ? '0 0 8px rgba(99,102,241,0.5)'
+                          : voice.status === 'coding'
+                            ? '0 0 8px rgba(6,182,212,0.5)'
+                            : 'none',
+                  }}
+                />
+              </div>
+
+              {/* Status text */}
+              <div className="flex flex-col">
+                <span className="text-[12px] text-[#c9d1d9] font-medium">
+                  {voice.status === 'listening'
+                    ? '🎙️ Listening — speak naturally'
+                    : voice.status === 'speaking'
+                      ? '🔊 Agent responding...'
+                      : voice.status === 'connecting'
+                        ? '⏳ Connecting to voice...'
+                        : voice.status === 'coding'
+                          ? '⚡ Coding + voice active'
+                          : voice.status === 'error'
+                            ? '❌ Connection error'
+                            : 'Voice agent'}
+                </span>
+                <span className="text-[10px] text-[#8b949e]">
+                  {voice.phase === 'planning'
+                    ? 'Planning phase — describe what you want to build'
+                    : 'Coding phase — say "wait" or "change" to redirect'}
+                </span>
+              </div>
+
+              {/* Action buttons */}
+              <div className="ml-auto flex items-center gap-2">
+                {voice.phase === 'planning' && voice.conversationHistory.length > 0 && (
+                  <button
+                    onClick={() => voice.triggerBuild()}
+                    className="text-[11px] text-[#0d1117] bg-[#58a6ff] hover:bg-[#79b8ff] rounded-md px-3 py-1 cursor-pointer transition-colors font-medium border-none"
+                  >
+                    ⚡ Start Coding
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setIsVoiceActive(false);
+                  }}
+                  className="text-[11px] text-[#8b949e] hover:text-[#f85149] bg-transparent border border-[#3d3d3d] rounded-md px-2 py-1 cursor-pointer transition-colors"
+                >
+                  End
+                </button>
+              </div>
+            </div>
+
+            {/* Conversation transcript */}
+            {voice.conversationHistory.length > 0 && (
+              <div
+                className="px-3 pb-1 max-h-[140px] overflow-y-auto"
+                style={{ scrollbarWidth: 'thin', scrollbarColor: '#3d3d3d transparent' }}
+              >
+                {voice.conversationHistory
+                  .filter((msg) => !msg.text.startsWith('[Coding update]'))
+                  .slice(-8) // Show last 8 messages to keep it compact
+                  .map((msg, i) => (
+                    <div
+                      key={i}
+                      className={classNames(
+                        'text-[12px] mb-1 px-2.5 py-1.5 rounded-md',
+                        msg.role === 'user'
+                          ? 'text-[#58a6ff] bg-[#1f6feb]/10 border-l-2 border-[#58a6ff]/30'
+                          : 'text-[#c9d1d9] bg-[#3d3d3d]/30 border-l-2 border-[#8b949e]/20',
+                      )}
+                    >
+                      <span className="font-semibold text-[10px] uppercase tracking-wider opacity-50 mr-1.5">
+                        {msg.role === 'user' ? 'You' : 'Agent'}
+                      </span>
+                      {msg.text}
+                    </div>
+                  ))}
+                {voice.currentUserTranscript && (
+                  <div className="text-[12px] mb-1 px-2.5 py-1.5 rounded-md text-[#58a6ff]/50 bg-[#1f6feb]/5 border-l-2 border-[#58a6ff]/15 italic">
+                    <span className="font-semibold text-[10px] uppercase tracking-wider opacity-30 mr-1.5">You</span>
+                    {voice.currentUserTranscript}...
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
 
         {/* Textarea */}
